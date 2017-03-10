@@ -128,12 +128,16 @@ namespace NSCs_codegen {
                 if (firstField == null)
                     firstField = f;
 #else
+#if true
+                ctd.Members.Add(new CodeSnippetTypeMember("\t\tpublic " + cdp.GetTypeOutput(new CodeTypeReference(colType)) + " " + propName + " { get; set; }\r\n"));
+#else
                 ctd.Members.Add(p = new CodeMemberProperty());
                 p.Name = propName;
                 p.Type = new CodeTypeReference(colType);
                 p.Attributes = MemberAttributes.Public | MemberAttributes.Final;
                 p.HasGet = true;
                 p.HasSet = true;
+#endif
 #endif
                 addCaseStatementsTo(csc2, tmp,
                     new CodePropertyReferenceExpression(ceThis, propName),

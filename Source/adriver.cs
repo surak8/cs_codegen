@@ -26,7 +26,7 @@ namespace NSCs_codegen {
             int exitCode = 0;
             SqlConnectionStringBuilder sb = new SqlConnectionStringBuilder();
             TextWriterTraceListener twtl = null;
-            string connStr, logFile, dir, appName;
+            string connStr, logFile, dir, appName, nameSpace;
             const string TRACER_NAME = "blah";
             CodeDomProvider cdp = new CSharpCodeProvider();
             CodeGeneratorOptions opts = new CodeGeneratorOptions();
@@ -48,10 +48,12 @@ namespace NSCs_codegen {
 
             Trace.WriteLine(appName + " starts");
 
+            nameSpace = "Colt.Database";
             sb = new SqlConnectionStringBuilder();
             sb.ApplicationName = appName;
             sb.DataSource = "colt-sql";
             sb.InitialCatalog = "checkweigh_data_dev";
+            sb.InitialCatalog = "QualityAndEngineering";
 #if false
             sb.IntegratedSecurity = false;
             sb.UserID = "operator";
@@ -62,7 +64,7 @@ namespace NSCs_codegen {
             connStr = sb.ConnectionString;
 
             Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
-            outDir = Path.Combine(Directory.GetCurrentDirectory(), "Generated_Files");
+            outDir = Path.Combine(Directory.GetCurrentDirectory(), "Generated_Files", sb.InitialCatalog);
             try {
                 using (SqlConnection conn = new SqlConnection(connStr)) {
                     conn.InfoMessage += Conn_InfoMessage;
@@ -73,8 +75,8 @@ namespace NSCs_codegen {
 
                     //                    generateCodeForSingleTable(conn, "colt_employee", outDir, string.Empty, cdp, opts);
                     //                    generateCodeForSingleTable(conn, "query", outDir, string.Empty, cdp, opts);
-                    generateCodeFromTables(conn, outDir, string.Empty, cdp, opts);
-//                    generateCodeFromViews(conn, outDir, string.Empty, cdp, opts);
+                    generateCodeFromTables(conn, outDir, nameSpace, cdp, opts);
+                    //                    generateCodeFromViews(conn, outDir, string.Empty, cdp, opts);
                     //                    generateCodeFromTables(conn, "KanbanTemp_CreateKanbanFile", Directory.GetCurrentDirectory(), string.Empty, cdp, opts);
 #endif
                     conn.Close();
@@ -93,37 +95,37 @@ namespace NSCs_codegen {
             Environment.Exit(exitCode);
         }
 
-        static void generateCodeFromViews(SqlConnection conn, string outDir, string empty, CodeDomProvider cdp, CodeGeneratorOptions opts) {
-              generateCodeSysObjectType(conn, outDir, empty, cdp, opts, "V");
+        static void generateCodeFromViews(SqlConnection conn, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts) {
+            generateCodeSysObjectType(conn, outDir, nameSpace, cdp, opts, "V");
         }
 
-        static void generateCodeFromTables(SqlConnection conn, string outDir, string empty, CodeDomProvider cdp, CodeGeneratorOptions opts) {
-              generateCodeSysObjectType(conn, outDir, empty, cdp, opts, "U");
+        static void generateCodeFromTables(SqlConnection conn, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts) {
+            generateCodeSysObjectType(conn, outDir, nameSpace, cdp, opts, "U");
         }
 
-            static void generateCodeSysObjectType(SqlConnection conn, string outDir, string empty, CodeDomProvider cdp, CodeGeneratorOptions opts,string objType) {
-                List<string> names = new List<string>();
+        static void generateCodeSysObjectType(SqlConnection conn, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts, string objType) {
+            List<string> names = new List<string>();
 
             SqlDataReader reader;
             try {
-                if (conn.State!=  ConnectionState.Open )
-                         conn.Open();
-                using (SqlCommand cmd = new SqlCommand("select name from sysobjects where type='"+objType+"' and uid=user_id('DBO') order by name", conn)) {
+                if (conn.State != ConnectionState.Open)
+                    conn.Open();
+                using (SqlCommand cmd = new SqlCommand("select name from sysobjects where type='" + objType + "' and uid=user_id('DBO') order by name", conn)) {
                     reader = cmd.ExecuteReader();
                     while (reader.Read())
                         names.Add(reader.GetString(0));
                     reader.Close();
                 }
-                foreach (string aTable in names) 
-                    generateCodeForSingleTable(conn, aTable, outDir, empty, cdp, opts);
-                
+                foreach (string aTable in names)
+                    generateCodeForSingleTable(conn, aTable, outDir, nameSpace, cdp, opts);
+
                 conn.Close();
             } catch (Exception ex) {
                 Logger.logMethod(MethodBase.GetCurrentMethod(), ex);
             }
         }
 
-        static void generateCodeForSingleTable(SqlConnection conn, string aTable, string outDir, string empty, CodeDomProvider cdp, CodeGeneratorOptions opts) {
+        static void generateCodeForSingleTable(SqlConnection conn, string aTable, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts) {
             SqlDataReader reader;
 
             using (SqlCommand cmd = new SqlCommand("SELECT * FROM " + aTable + " WHERE 1=0", conn)) {
@@ -131,7 +133,7 @@ namespace NSCs_codegen {
                     conn.Open();
                 //                cmd.CommandText = "SELECT * FROM " + aTable + " WHERE 1=0";
                 reader = cmd.ExecuteReader();
-                generateStuff(makeClassName(aTable), outDir, empty, cdp, opts, reader);
+                generateStuff(makeClassName(aTable), outDir, nameSpace, cdp, opts, reader);
                 reader.Close();
             }
         }
