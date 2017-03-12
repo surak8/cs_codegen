@@ -48,7 +48,6 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup Label="AssemblyInfo">
-    <None Include="Generated_Files\KanbanTempInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Source\adriver.test.cs" />
     <Compile Include="Source\adriver.util.cs" />
