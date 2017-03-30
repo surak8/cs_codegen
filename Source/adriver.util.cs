@@ -65,7 +65,29 @@ namespace NSCs_codegen {
             f = null;
 #endif
 
+            var avar = reader.GetSchemaTable();
+            DataTable dt = reader.GetSchemaTable();
+            int i0 = 0;
+            foreach(DataColumn dc in dt.Columns) {
+                if (i0 > 0)
+                    Debug.Write(",");
+                Debug.Write(dc.ColumnName);
+                i0++;
+            }
+            Debug.WriteLine(string.Empty);
 
+            foreach(DataRow dr in dt.Rows) {
+                i0 = 0;
+                foreach(DataColumn dc in dt.Columns) {
+                    if (i0 > 0)
+                        Debug.Write(",");
+                    Debug.Write(dr[dc]);
+                    i0++;
+                }
+                Debug.WriteLine(string.Empty);
+            }
+            Debug.WriteLine(string.Empty);
+            //    foreach()
             ccu = new CodeCompileUnit();
             ccu.Namespaces.Add(ns = ns0 = new CodeNamespace());
             ns0.Imports.Add(new CodeNamespaceImport("System"));
