@@ -31,7 +31,7 @@ namespace NSCs_codegen {
             try {
                 using (SqlCommand cmd = new SqlCommand(procName, (SqlConnection)conn)) {
                     reader = cmd.ExecuteReader();
-                    generateStuff(makeClassName(procName), nameSpace, outputPath, cdp, opts, reader);
+                    generateStuff(makeClassName(procName), nameSpace, outputPath, cdp, opts, reader,procName);
                     reader.Close();
                 }
             } catch (Exception ex) {
@@ -39,7 +39,7 @@ namespace NSCs_codegen {
             }
         }
 
-        static void generateStuff(string className, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts, SqlDataReader reader) {
+        static void generateStuff(string className, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts, SqlDataReader reader,string tableName) {
             CodeCompileUnit ccu;
             CodeNamespace ns, ns0;
             CodeTypeDeclaration ctd;
@@ -64,29 +64,14 @@ namespace NSCs_codegen {
             p = null;
             f = null;
 #endif
+              if (string.IsNullOrEmpty(outDir))
+                    outDir = Directory.GetCurrentDirectory();
 
-            var avar = reader.GetSchemaTable();
-            DataTable dt = reader.GetSchemaTable();
-            int i0 = 0;
-            foreach(DataColumn dc in dt.Columns) {
-                if (i0 > 0)
-                    Debug.Write(",");
-                Debug.Write(dc.ColumnName);
-                i0++;
-            }
-            Debug.WriteLine(string.Empty);
+                if (!Directory.Exists(outDir))
+                    Directory.CreateDirectory(outDir);
 
-            foreach(DataRow dr in dt.Rows) {
-                i0 = 0;
-                foreach(DataColumn dc in dt.Columns) {
-                    if (i0 > 0)
-                        Debug.Write(",");
-                    Debug.Write(dr[dc]);
-                    i0++;
-                }
-                Debug.WriteLine(string.Empty);
-            }
-            Debug.WriteLine(string.Empty);
+     
+          
             //    foreach()
             ccu = new CodeCompileUnit();
             ccu.Namespaces.Add(ns = ns0 = new CodeNamespace());
@@ -96,6 +81,8 @@ namespace NSCs_codegen {
                 ccu.Namespaces.Add(ns = new CodeNamespace(nameSpace));
             ns.Types.Add(ctd = new CodeTypeDeclaration(className));
             ctd.IsPartial = true;
+
+            generateCSVFrom(reader, tableName, outDir,ctd);
 
             ar = new CodeArgumentReferenceExpression("reader");
             cc = new CodeConstructor();
@@ -181,13 +168,7 @@ namespace NSCs_codegen {
             cc.Parameters.Add(new CodeParameterDeclarationExpression("IDataReader", ar.ParameterName));
             if (ccu != null) {
 
-                if (string.IsNullOrEmpty(outDir))
-                    outDir = Directory.GetCurrentDirectory();
-
-                if (!Directory.Exists(outDir))
-                    Directory.CreateDirectory(outDir);
-
-                StringBuilder sb;
+             StringBuilder sb;
                 string fname = Path.Combine(outDir, className + "." + cdp.FileExtension);
                 using (StringWriter sw = new StringWriter(sb = new StringBuilder())) {
                     //                    Trace.WriteLine("here");
@@ -197,6 +178,112 @@ namespace NSCs_codegen {
                     Trace.WriteLine("Code is:" + Environment.NewLine + sb.ToString());
                 File.WriteAllText(fname, sb.ToString());
             }
+        }
+
+        static void generateCSVFrom(SqlDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd) {
+            DataTable dt = reader.GetSchemaTable();
+            int i0 = 0;
+            string filename;
+
+            using (TextWriter tw = new StreamWriter(filename = Path.Combine(outDir, tableName + ".csv"))) {
+                foreach (DataColumn dc in dt.Columns) {
+                    if (i0 > 0)
+                        tw.Write(",");
+                    tw.Write(dc.ColumnName);
+                    i0++;
+                }
+                tw.WriteLine();
+
+                foreach (DataRow dr in dt.Rows) {
+                    i0 = 0;
+                    foreach (DataColumn dc in dt.Columns) {
+                        if (i0 > 0)
+                            tw.Write(",");
+                        tw.Write(dr[dc]);
+                        i0++;
+                    }
+                    tw.WriteLine();
+                }
+                tw.WriteLine();
+            }
+            Debug.Print("generated: " + filename);
+            
+            CodeTypeReference ctrColDef = new CodeTypeReference("ColumnDef");
+            CodeExpression[] args = makeClassFieldCollection(dt, ctrColDef);
+            CodeMemberField f;
+            ctd.Members.Add(f = new CodeMemberField());
+            f.Attributes = MemberAttributes.Static;
+            f.Name = "_fields";
+            var avar = new CodeTypeParameter("string");
+            f.Type = new CodeTypeReference("List", ctrColDef);
+            f.InitExpression = new CodeObjectCreateExpression(f.Type, new CodeArrayCreateExpression(ctrColDef, args));
+        }
+
+        static CodeExpression[] makeClassFieldCollection(DataTable dt, CodeTypeReference ctrColDef) {
+            List<CodeExpression> exprs = new List<CodeExpression>();
+            /*
+             * ColumnName,
+             * ColumnOrdinal,
+             * ColumnSize,
+             * IsUnique? (not working)
+             * DataType,
+             * AllowDBNull,
+             * DataTypeName
+             * */
+            CodeObjectCreateExpression ret = new CodeObjectCreateExpression(ctrColDef);
+            foreach (DataRow dr in dt.Rows) {
+                exprs.Add(ret = new CodeObjectCreateExpression(ctrColDef));
+                ret.Parameters.Add(new CodePrimitiveExpression(dr["ColumnName"].ToString()));
+                //exprs.Add(createColDef(ctrColDef, "columnName", dr["ColumnName"].ToString()));
+                //exprs.Add(createColDef(ctrColDef, "columnIndex", Convert.ToInt32 (dr["ColumnOrdinal"].ToString())));
+                //exprs.Add(createColDef(ctrColDef, "columnSize", Convert.ToInt32(dr["ColumnSize"])));
+                //exprs.Add(createColDef(ctrColDef, "DataType", dr["DataType"].ToString()));
+                //exprs.Add(createColDef(ctrColDef, "AllowDBNull", Convert.ToBoolean(dr["AllowDBNull"])));
+                //exprs.Add(createColDef(ctrColDef, "DataTypeName", dr["DataTypeName"].ToString()));
+            }
+        //    return new CodeExpression[] { ret };
+            //exprs.Add(createColDef(ctrColDef, "columnName", "col1"));
+            //exprs.Add(
+            //new CodeObjectCreateExpression(ctrColDef,
+            //            new CodeBinaryOperatorExpression(
+            //                new CodeSnippetExpression("columnName"),
+            //                CodeBinaryOperatorType.Assign,
+            //                new CodeSnippetExpression("\"dummy\""))));
+            //),
+
+
+            //        new CodeObjectCreateExpression(ctrColDef),
+            //        new CodeObjectCreateExpression(ctrColDef),
+            //        new CodeObjectCreateExpression(ctrColDef),
+            //        new CodeObjectCreateExpression(ctrColDef)));
+
+
+            return exprs.ToArray();
+        }
+
+        static CodeExpression createColDef(CodeTypeReference ctr, string fldName, string fldValue) {
+            return new CodeObjectCreateExpression(
+                ctr,
+                new CodeBinaryOperatorExpression(
+                    new CodeSnippetExpression(fldName),
+                    CodeBinaryOperatorType.Assign,
+                    new CodeSnippetExpression("\"" + fldValue + "\"")));
+        }
+        static CodeExpression createColDef(CodeTypeReference ctr, string fldName, int fldValue) {
+            return new CodeObjectCreateExpression(
+                ctr,
+                new CodeBinaryOperatorExpression(
+                    new CodeSnippetExpression(fldName),
+                    CodeBinaryOperatorType.Assign,
+                    new CodePrimitiveExpression(fldValue)));
+        }
+        static CodeExpression createColDef(CodeTypeReference ctr, string fldName, bool fldValue) {
+            return new CodeObjectCreateExpression(
+                ctr,
+                new CodeBinaryOperatorExpression(
+                    new CodeSnippetExpression(fldName),
+                    CodeBinaryOperatorType.Assign,
+                    new CodePrimitiveExpression(fldValue)));
         }
 
         static CodeTypeReference makeTypeReference(Type t, CodeDomProvider cdp) {

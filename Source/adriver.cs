@@ -133,7 +133,7 @@ namespace NSCs_codegen {
                     conn.Open();
                 //                cmd.CommandText = "SELECT * FROM " + aTable + " WHERE 1=0";
                 reader = cmd.ExecuteReader();
-                generateStuff(makeClassName(aTable), outDir, nameSpace, cdp, opts, reader);
+                generateStuff(makeClassName(aTable), outDir, nameSpace, cdp, opts, reader,aTable);
                 reader.Close();
             }
         }
