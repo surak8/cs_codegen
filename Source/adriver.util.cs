@@ -82,6 +82,8 @@ namespace NSCs_codegen {
             ctd.BaseTypes.Add(new CodeTypeReference("ColtBaseRecord"));
             ctd.IsPartial = true;
 
+            addTablenameConstant(tableName, ctd);
+
             generateCSVFrom(reader, tableName, outDir, ctd, ns0);
 
             ar = new CodeArgumentReferenceExpression("reader");
@@ -175,13 +177,26 @@ namespace NSCs_codegen {
                     Trace.WriteLine("Code is:" + Environment.NewLine + sb.ToString());
                 File.WriteAllText(fname, sb.ToString());
                 Trace.WriteLine("wrote: " + fname);
+                Console.WriteLine("wrote: " + fname);
             }
+        }
+
+        static void addTablenameConstant(string tableName, CodeTypeDeclaration ctd) {
+            addClassConstant(ctd, "TABLE_NAME", tableName);
+        }
+
+        static void addClassConstant(CodeTypeDeclaration ctd, string constantName, string constantValue) {
+            CodeMemberField ftabname = new CodeMemberField(typeof(string), constantName);
+
+            ftabname.InitExpression = new CodePrimitiveExpression(constantValue);
+            ftabname.Attributes = MemberAttributes.Const | MemberAttributes.Public;
+            ctd.Members.Add(ftabname);
         }
 
         static void generateCSVFrom(SqlDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd, CodeNamespace ns) {
             DataTable dt = reader.GetSchemaTable();
 
-            //            writeCSV(tableName, outDir, dt);
+            //            writeCSV(constantValue, outDir, dt);
             generateColumnCollection(ctd, ns, dt);
         }
 
@@ -217,6 +232,7 @@ namespace NSCs_codegen {
             CodeTypeReference ctrColDef = new CodeTypeReference("ColumnDef");
             CodeExpression[] args = makeClassFieldCollection(dt, ctrColDef);
             CodeMemberField f;
+            CodeMemberProperty f2;
 
             ns.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
 
@@ -225,6 +241,12 @@ namespace NSCs_codegen {
             f.Name = "_fields";
             f.Type = new CodeTypeReference("List", ctrColDef);
             f.InitExpression = new CodeObjectCreateExpression(f.Type, new CodeArrayCreateExpression(ctrColDef, args));
+
+            ctd.Members.Add(f2 = new CodeMemberProperty());
+            f2.Name = "fields";
+            f2.Attributes = MemberAttributes.Static | MemberAttributes.Public;
+            f2.Type = f.Type;
+            f2.GetStatements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(null, f.Name)));
         }
 
         static CodeExpression[] makeClassFieldCollection(DataTable dt, CodeTypeReference ctrColDef) {
