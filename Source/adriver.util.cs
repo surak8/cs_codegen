@@ -26,12 +26,12 @@ namespace NSCs_codegen {
         #endregion
 
         static void generateCodeFromProcedure(IDbConnection conn, string procName, string outputPath, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts) {
-        SqlDataReader reader;
+            SqlDataReader reader;
 
             try {
-                using (SqlCommand cmd = new SqlCommand(procName, (SqlConnection)conn)) {
+                using (SqlCommand cmd = new SqlCommand(procName, (SqlConnection) conn)) {
                     reader = cmd.ExecuteReader();
-                    generateStuff(makeClassName(procName), nameSpace, outputPath, cdp, opts, reader,procName);
+                    generateStuff(makeClassName(procName), nameSpace, outputPath, cdp, opts, reader, procName);
                     reader.Close();
                 }
             } catch (Exception ex) {
@@ -39,15 +39,13 @@ namespace NSCs_codegen {
             }
         }
 
-        static void generateStuff(string className, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts, SqlDataReader reader,string tableName) {
+        static void generateStuff(string className, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts, SqlDataReader reader, string tableName) {
             CodeCompileUnit ccu;
             CodeNamespace ns, ns0;
             CodeTypeDeclaration ctd;
             string tmp, fldName, propName;
             Type colType;
 
-
-            CodeMemberProperty p;
             CodeStatementCollection csc, csc2;
 
             CodeVariableReferenceExpression vr, vrI;
@@ -57,6 +55,7 @@ namespace NSCs_codegen {
             CodeStatement csswitch;
             CodeIterationStatement cis;
 #if FIELD_AND_PROPERTY
+            CodeMemberProperty p;
             CodeMemberField f;
            CodeMemberProperty firstProp = null;
             CodeMemberField firstField = null;
@@ -64,14 +63,13 @@ namespace NSCs_codegen {
             p = null;
             f = null;
 #endif
-              if (string.IsNullOrEmpty(outDir))
-                    outDir = Directory.GetCurrentDirectory();
+            if (string.IsNullOrEmpty(outDir))
+                outDir = Directory.GetCurrentDirectory();
 
-                if (!Directory.Exists(outDir))
-                    Directory.CreateDirectory(outDir);
+            if (!Directory.Exists(outDir))
+                Directory.CreateDirectory(outDir);
 
-     
-          
+
             //    foreach()
             ccu = new CodeCompileUnit();
             ccu.Namespaces.Add(ns = ns0 = new CodeNamespace());
@@ -80,12 +78,15 @@ namespace NSCs_codegen {
             if (!string.IsNullOrEmpty(nameSpace))
                 ccu.Namespaces.Add(ns = new CodeNamespace(nameSpace));
             ns.Types.Add(ctd = new CodeTypeDeclaration(className));
+            //            ctd.BaseTypes.Add(new CodeTypeReference("Colt.Database.ColtBaseRecord"));
+            ctd.BaseTypes.Add(new CodeTypeReference("ColtBaseRecord"));
             ctd.IsPartial = true;
 
-            generateCSVFrom(reader, tableName, outDir,ctd);
+            generateCSVFrom(reader, tableName, outDir, ctd, ns0);
 
             ar = new CodeArgumentReferenceExpression("reader");
             cc = new CodeConstructor();
+            cc.Attributes = MemberAttributes.Public;
             cc.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "ctor"));
             cc.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, "ctor"));
             vr = new CodeVariableReferenceExpression("colName");
@@ -104,9 +105,6 @@ namespace NSCs_codegen {
             csc2 = new CodeStatementCollection();
             csswitch = new CodeSnippetStatement("\t\t\tswitch(" + removeTrailingChar(generate(csCN, cdp, opts), ';') + ") {");
             csc2.Add(csswitch);
-
-            //         CodeExpression ceInc;
-            //        string tmp;
 
             tmp = removeParensFrom(generate(new CodeExpressionStatement(
                                 new CodeBinaryOperatorExpression(vrI,
@@ -167,21 +165,27 @@ namespace NSCs_codegen {
             cc.Statements.AddRange(csc);
             cc.Parameters.Add(new CodeParameterDeclarationExpression("IDataReader", ar.ParameterName));
             if (ccu != null) {
+                StringBuilder sb;
 
-             StringBuilder sb;
                 string fname = Path.Combine(outDir, className + "." + cdp.FileExtension);
                 using (StringWriter sw = new StringWriter(sb = new StringBuilder())) {
-                    //                    Trace.WriteLine("here");
                     cdp.GenerateCodeFromCompileUnit(ccu, sw, opts);
                 }
                 if (showCode)
                     Trace.WriteLine("Code is:" + Environment.NewLine + sb.ToString());
                 File.WriteAllText(fname, sb.ToString());
+                Trace.WriteLine("wrote: " + fname);
             }
         }
 
-        static void generateCSVFrom(SqlDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd) {
+        static void generateCSVFrom(SqlDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd, CodeNamespace ns) {
             DataTable dt = reader.GetSchemaTable();
+
+            //            writeCSV(tableName, outDir, dt);
+            generateColumnCollection(ctd, ns, dt);
+        }
+
+        static void writeCSV(string tableName, string outDir, DataTable dt) {
             int i0 = 0;
             string filename;
 
@@ -207,14 +211,18 @@ namespace NSCs_codegen {
                 tw.WriteLine();
             }
             Debug.Print("generated: " + filename);
-            
+        }
+
+        static void generateColumnCollection(CodeTypeDeclaration ctd, CodeNamespace ns, DataTable dt) {
             CodeTypeReference ctrColDef = new CodeTypeReference("ColumnDef");
             CodeExpression[] args = makeClassFieldCollection(dt, ctrColDef);
             CodeMemberField f;
+
+            ns.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
+
             ctd.Members.Add(f = new CodeMemberField());
             f.Attributes = MemberAttributes.Static;
             f.Name = "_fields";
-            var avar = new CodeTypeParameter("string");
             f.Type = new CodeTypeReference("List", ctrColDef);
             f.InitExpression = new CodeObjectCreateExpression(f.Type, new CodeArrayCreateExpression(ctrColDef, args));
         }
@@ -233,31 +241,17 @@ namespace NSCs_codegen {
             CodeObjectCreateExpression ret = new CodeObjectCreateExpression(ctrColDef);
             foreach (DataRow dr in dt.Rows) {
                 exprs.Add(ret = new CodeObjectCreateExpression(ctrColDef));
-                ret.Parameters.Add(new CodePrimitiveExpression(dr["ColumnName"].ToString()));
-                //exprs.Add(createColDef(ctrColDef, "columnName", dr["ColumnName"].ToString()));
-                //exprs.Add(createColDef(ctrColDef, "columnIndex", Convert.ToInt32 (dr["ColumnOrdinal"].ToString())));
-                //exprs.Add(createColDef(ctrColDef, "columnSize", Convert.ToInt32(dr["ColumnSize"])));
-                //exprs.Add(createColDef(ctrColDef, "DataType", dr["DataType"].ToString()));
-                //exprs.Add(createColDef(ctrColDef, "AllowDBNull", Convert.ToBoolean(dr["AllowDBNull"])));
-                //exprs.Add(createColDef(ctrColDef, "DataTypeName", dr["DataTypeName"].ToString()));
+                ret.Parameters.AddRange(new CodeExpression[] {
+                    new CodePrimitiveExpression(dr["ColumnName"].ToString()),
+                    new CodePrimitiveExpression (dr["DataTypeName"].ToString()),
+                    new CodeTypeOfExpression (dr["DataType"].ToString()),
+                    new CodePrimitiveExpression(Convert.ToInt32 (dr["ColumnOrdinal"])),
+                    new CodePrimitiveExpression(Convert.ToInt32 (dr["ColumnSize"])),
+                    new CodePrimitiveExpression(Convert.ToBoolean(dr["AllowDBNull"])),
+                    new CodePrimitiveExpression(Convert.ToBoolean(dr["IsUnique"]))
+                });
+                //               Debug.Print("found " + dr["IsKey"]);
             }
-        //    return new CodeExpression[] { ret };
-            //exprs.Add(createColDef(ctrColDef, "columnName", "col1"));
-            //exprs.Add(
-            //new CodeObjectCreateExpression(ctrColDef,
-            //            new CodeBinaryOperatorExpression(
-            //                new CodeSnippetExpression("columnName"),
-            //                CodeBinaryOperatorType.Assign,
-            //                new CodeSnippetExpression("\"dummy\""))));
-            //),
-
-
-            //        new CodeObjectCreateExpression(ctrColDef),
-            //        new CodeObjectCreateExpression(ctrColDef),
-            //        new CodeObjectCreateExpression(ctrColDef),
-            //        new CodeObjectCreateExpression(ctrColDef)));
-
-
             return exprs.ToArray();
         }
 
@@ -404,7 +398,6 @@ namespace NSCs_codegen {
         static string makeFieldName(string tmp) {
             return "_" + fixup(tmp.Replace(' ', '_'));
         }
-
 
         static string fixup(string procName) {
             return fixup(procName, false);

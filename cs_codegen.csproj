@@ -49,12 +49,16 @@
   </ItemGroup>
   <ItemGroup Label="AssemblyInfo">
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Source\adriver.test.cs" />
-    <Compile Include="Source\adriver.util.cs" />
-    <Compile Include="Source\Logger.cs" />
   </ItemGroup>
   <ItemGroup Label="IDK">
     <Compile Include="Source\adriver.cs" />
+    <Compile Include="Source\adriver.test.cs">
+      <DependentUpon>adriver.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Source\adriver.util.cs">
+      <DependentUpon>adriver.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Source\Logger.cs" />
   </ItemGroup>
   <ItemGroup Label="References">
     <Reference Include="System" />

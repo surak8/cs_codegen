@@ -26,15 +26,17 @@ namespace NSCs_codegen {
             int exitCode = 0;
             SqlConnectionStringBuilder sb = new SqlConnectionStringBuilder();
             TextWriterTraceListener twtl = null;
-            string connStr, logFile, dir, appName, nameSpace;
+            string connStr, logFile, dir, appName, nameSpace, server, database;
             const string TRACER_NAME = "blah";
             CodeDomProvider cdp = new CSharpCodeProvider();
             CodeGeneratorOptions opts = new CodeGeneratorOptions();
             string outDir;
+            List<string> argsToProcess;
+            bool showHelp;
+
 
             opts.BlankLinesBetweenMembers = false;
             opts.ElseOnClosing = true;
-
 
             appName = Assembly.GetEntryAssembly().GetName().Name;
 #if TRACE
@@ -45,46 +47,63 @@ namespace NSCs_codegen {
             twtl = new TextWriterTraceListener(logFile, TRACER_NAME);
             Trace.Listeners.Add(twtl);
 #endif
-
             Trace.WriteLine(appName + " starts");
 
-            nameSpace = "Colt.Database";
-            sb = new SqlConnectionStringBuilder();
-            sb.ApplicationName = appName;
-            sb.DataSource = "colt-sql";
-            sb.InitialCatalog = "checkweigh_data_dev";
-            sb.InitialCatalog = "QualityAndEngineering";
+            argsToProcess = parseArguments(args, out nameSpace, out server, out database, out showHelp, out outDir);
+            if (string.IsNullOrEmpty(database)) {
+                Console.Error.WriteLine("database not specified.  Cannot continue.");
+                showHelp = true;
+            }
+            if (string.IsNullOrEmpty(outDir)) {
+                Console.Error.WriteLine("output-directory not specified.  Cannot continue.");
+                showHelp = true;
+            }
+            if (showHelp) {
+                Console.Error.WriteLine("show help here");
+                exitCode = 2;
+            } else {
+
+                sb = new SqlConnectionStringBuilder();
+                sb.ApplicationName = appName;
+                sb.DataSource = server;
+                sb.InitialCatalog = database;
+                //      sb.InitialCatalog = "QualityAndEngineering";
 #if false
             sb.IntegratedSecurity = false;
             sb.UserID = "operator";
             sb.Password = "operator";
 #else
-            sb.IntegratedSecurity = true;
+                sb.IntegratedSecurity = true;
 #endif
-            connStr = sb.ConnectionString;
+                connStr = sb.ConnectionString;
 
-            Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
-            outDir = Path.Combine(Directory.GetCurrentDirectory(), "Generated_Files", sb.InitialCatalog);
-            try {
-                using (SqlConnection conn = new SqlConnection(connStr)) {
-                    conn.InfoMessage += Conn_InfoMessage;
-                    conn.Open();
+                Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
+
+                Trace.WriteLine("Generate files in: " + outDir);
+                //''        outDir = Path.Combine(Directory.GetCurrentDirectory(), "Generated_Files", sb.InitialCatalog);
+                try {
+                    if (!Directory.Exists(outDir))
+                        Directory.CreateDirectory(outDir);
+                    using (SqlConnection conn = new SqlConnection(connStr)) {
+                        conn.InfoMessage += Conn_InfoMessage;
+                        conn.Open();
 #if OTHER_TEST
                     invokeTestProc(conn);
 #else
 
-                    //                    generateCodeForSingleTable(conn, "colt_employee", outDir, string.Empty, cdp, opts);
-                    //                    generateCodeForSingleTable(conn, "query", outDir, string.Empty, cdp, opts);
-                    generateCodeFromTables(conn, outDir, nameSpace, cdp, opts);
-                    //                    generateCodeFromViews(conn, outDir, string.Empty, cdp, opts);
-                    //                    generateCodeFromTables(conn, "KanbanTemp_CreateKanbanFile", Directory.GetCurrentDirectory(), string.Empty, cdp, opts);
+                        //                    generateCodeForSingleTable(conn, "colt_employee", outDir, string.Empty, cdp, opts);
+                        //                    generateCodeForSingleTable(conn, "query", outDir, string.Empty, cdp, opts);
+                        generateCodeFromTables(conn, outDir, nameSpace, cdp, opts);
+                        //                    generateCodeFromViews(conn, outDir, string.Empty, cdp, opts);
+                        //                    generateCodeFromTables(conn, "KanbanTemp_CreateKanbanFile", Directory.GetCurrentDirectory(), string.Empty, cdp, opts);
 #endif
-                    conn.Close();
-                }
-            } catch (Exception ex) {
-                Trace.WriteLine(ex.Message);
-            } finally {
+                        conn.Close();
+                    }
+                } catch (Exception ex) {
+                    Trace.WriteLine(ex.Message);
+                } finally {
 
+                }
             }
             Trace.WriteLine(appName + " ends");
 #if TRACE
@@ -94,6 +113,65 @@ namespace NSCs_codegen {
 #endif
             Environment.Exit(exitCode);
         }
+
+        /// <summary>parse the command-line parameters.</summary>
+        /// <param name="args"></param>
+        /// <param name="nameSpace"></param>
+        /// <param name="server"></param>
+        /// <param name="database"></param>
+        /// <param name="showHelp"></param>
+        /// <param name="outDir"></param>
+        /// <returns></returns>
+        static List<string> parseArguments(string[] args, out string nameSpace, out string server, out string database, out bool showHelp, out string outDir) {
+            List<string> argsToProcess=new List<string>();
+            int nargs = args.Length, len;
+            string anArg;
+
+            nameSpace = "Colt.Database";
+            server = "colt-sql";
+            outDir = null;
+            database = null;
+//            database = "checkweigh_data_dev";
+
+            //        zipName = null;
+            showHelp = false;
+            argsToProcess = new List<string>();
+            for (int i = 0; i < nargs; i++) {
+                anArg = args[i];
+                if ((len = anArg.Length) >= 2) {
+                    if (anArg[0] == '-' || anArg[0] == '/') {
+                        switch (anArg[1]) {
+                            case 'd':
+                                if (len > 2)
+                                    database = anArg.Substring(2).Trim();
+                                else { database = args[i + 1]; i++; }
+                                break;
+                            case 'n':
+                                if (len > 2)
+                                    nameSpace = anArg.Substring(2).Trim();
+                                else { nameSpace = args[i + 1]; i++; }
+                                break;
+                            case 'o':
+                                if (len > 2)
+                                    outDir = anArg.Substring(2).Trim();
+                                else { outDir = args[i + 1]; i++; }
+                                break;
+                            case 's':
+                                if (len > 2)
+                                    server = anArg.Substring(2).Trim();
+                                else { server = args[i + 1]; i++; }
+                                break;
+                            case 'h': showHelp = true; break;
+                            case '?': showHelp = true; break;
+                        }
+                    } else {
+                        argsToProcess.Add(anArg);
+                    }
+                }
+            }
+            return argsToProcess;
+        }
+
 
         static void generateCodeFromViews(SqlConnection conn, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts) {
             generateCodeSysObjectType(conn, outDir, nameSpace, cdp, opts, "V");
@@ -133,7 +211,7 @@ namespace NSCs_codegen {
                     conn.Open();
                 //                cmd.CommandText = "SELECT * FROM " + aTable + " WHERE 1=0";
                 reader = cmd.ExecuteReader();
-                generateStuff(makeClassName(aTable), outDir, nameSpace, cdp, opts, reader,aTable);
+                generateStuff(makeClassName(aTable), outDir, nameSpace, cdp, opts, reader, aTable);
                 reader.Close();
             }
         }
