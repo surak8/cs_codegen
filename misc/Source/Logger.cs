@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace NSCs_codegen {
+namespace NSMisc {
     /// <summary>logging class.</summary>
-    public static class Logger1 {
+    public static class Logger {
 
         #region fields
         /// <summary>controls logging-style.</summary>
@@ -13,6 +13,7 @@ namespace NSCs_codegen {
         public static bool isUnique = false;
 
         /// <summary>messages written.</summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         static readonly List<string> msgs = new List<string>();
         #endregion fields
 
@@ -66,7 +67,10 @@ namespace NSCs_codegen {
         /// <summary>create a method-signature.</summary>
         /// <returns></returns>
         public static string makeSig(MethodBase mb) {
-            return mb.ReflectedType.Name + "." + mb.Name;
+            return mb.ReflectedType.Name + ((
+                string.Compare(mb.Name, ConstructorInfo.ConstructorName, true) == 0 ||
+                string.Compare(mb.Name, ConstructorInfo.TypeConstructorName, true) == 0
+                ) ? string.Empty : ".") + mb.Name;
         }
         #endregion misc. methods
         #endregion methods

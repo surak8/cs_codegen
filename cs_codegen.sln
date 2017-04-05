@@ -5,6 +5,10 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs_codegen", "cs_codegen.csproj", "{3C76C5FF-3378-470B-B584-ADE2ECD0260C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlDatasource", "XmlDataSource\XmlDatasource.csproj", "{B0ECFABB-7ADA-467D-954F-64F11EA7F19D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "misc", "misc\misc.csproj", "{6E33E7DB-EDA9-4333-A2A0-2C38D76D5AF3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -15,6 +19,14 @@ Global
 		{3C76C5FF-3378-470B-B584-ADE2ECD0260C}.Debug|x86.Build.0 = Debug|x86
 		{3C76C5FF-3378-470B-B584-ADE2ECD0260C}.Release|x86.ActiveCfg = Release|x86
 		{3C76C5FF-3378-470B-B584-ADE2ECD0260C}.Release|x86.Build.0 = Release|x86
+		{B0ECFABB-7ADA-467D-954F-64F11EA7F19D}.Debug|x86.ActiveCfg = Debug|x86
+		{B0ECFABB-7ADA-467D-954F-64F11EA7F19D}.Debug|x86.Build.0 = Debug|x86
+		{B0ECFABB-7ADA-467D-954F-64F11EA7F19D}.Release|x86.ActiveCfg = Release|x86
+		{B0ECFABB-7ADA-467D-954F-64F11EA7F19D}.Release|x86.Build.0 = Release|x86
+		{6E33E7DB-EDA9-4333-A2A0-2C38D76D5AF3}.Debug|x86.ActiveCfg = Debug|x86
+		{6E33E7DB-EDA9-4333-A2A0-2C38D76D5AF3}.Debug|x86.Build.0 = Debug|x86
+		{6E33E7DB-EDA9-4333-A2A0-2C38D76D5AF3}.Release|x86.ActiveCfg = Release|x86
+		{6E33E7DB-EDA9-4333-A2A0-2C38D76D5AF3}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

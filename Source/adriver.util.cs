@@ -3,6 +3,7 @@ using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
@@ -25,13 +26,26 @@ namespace NSCs_codegen {
         static IDictionary<string, string> nameMap = new Dictionary<string, string>();
         #endregion
 
-        static void generateCodeFromProcedure(IDbConnection conn, string procName, string outputPath, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts) {
-            SqlDataReader reader;
+//<<<<<<< Updated upstream
+//        static void generateCodeFromProcedure(IDbConnection conn, string procName, string outputPath, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts) {
+//            SqlDataReader reader;
+//=======
+        static void generateCodeFromProcedure(IDbConnection conn, string procName, CodeGenArgs args) {
+        SqlDataReader reader;
+//>>>>>>> Stashed changes
 
             try {
                 using (SqlCommand cmd = new SqlCommand(procName, (SqlConnection) conn)) {
                     reader = cmd.ExecuteReader();
-                    generateStuff(makeClassName(procName), nameSpace, outputPath, cdp, opts, reader, procName);
+//<<<<<<< Updated upstream
+//                    generateStuff(makeClassName(procName), nameSpace, outputPath, cdp, opts, reader, procName);
+//=======
+//<<<<<<< Updated upstream
+//                    generateStuff(makeClassName(procName), nameSpace, outputPath, cdp, opts, reader,procName);
+//=======
+                    generateStuff(makeClassName(procName), args, reader,procName);
+//>>>>>>> Stashed changes
+//>>>>>>> Stashed changes
                     reader.Close();
                 }
             } catch (Exception ex) {
@@ -39,13 +53,28 @@ namespace NSCs_codegen {
             }
         }
 
-        static void generateStuff(string className, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts, SqlDataReader reader, string tableName) {
+//<<<<<<< Updated upstream
+//        static void generateStuff(string className, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts, SqlDataReader reader, string tableName) {
+//=======
+//<<<<<<< Updated upstream
+//        static void generateStuff(string className, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts, SqlDataReader reader,string tableName) {
+//=======
+        static void generateStuff(string className, CodeGenArgs args, IDataReader  reader,string tableName) {
+//>>>>>>> Stashed changes
+//>>>>>>> Stashed changes
             CodeCompileUnit ccu;
             CodeNamespace ns, ns0;
             CodeTypeDeclaration ctd;
             string tmp, fldName, propName;
             Type colType;
 
+//<<<<<<< Updated upstream
+//=======
+            CodeDomProvider cdp = args.provider;
+#warning check this. 
+            string nameSpace = args.nameSpace;
+//            CodeMemberProperty p;
+//>>>>>>> Stashed changes
             CodeStatementCollection csc, csc2;
 
             CodeVariableReferenceExpression vr, vrI;
@@ -63,12 +92,20 @@ namespace NSCs_codegen {
             p = null;
             f = null;
 #endif
-            if (string.IsNullOrEmpty(outDir))
-                outDir = Directory.GetCurrentDirectory();
+//<<<<<<< Updated upstream
+//            if (string.IsNullOrEmpty(outDir))
+//                outDir = Directory.GetCurrentDirectory();
 
-            if (!Directory.Exists(outDir))
-                Directory.CreateDirectory(outDir);
+//            if (!Directory.Exists(outDir))
+//                Directory.CreateDirectory(outDir);
 
+//=======
+              if (string.IsNullOrEmpty(args.outDir))
+                    args.outDir = Directory.GetCurrentDirectory();
+
+                if (!Directory.Exists(args.outDir))
+                    Directory.CreateDirectory(args.outDir);
+//>>>>>>> Stashed changes
 
             //    foreach()
             ccu = new CodeCompileUnit();
@@ -82,9 +119,13 @@ namespace NSCs_codegen {
             ctd.BaseTypes.Add(new CodeTypeReference("ColtBaseRecord"));
             ctd.IsPartial = true;
 
+//<<<<<<< Updated upstream
             addTablenameConstant(tableName, ctd);
 
-            generateCSVFrom(reader, tableName, outDir, ctd, ns0);
+            //generateCSVFrom(reader, tableName, outDir, ctd, ns0);
+            //=======
+            generateCSVFrom(reader, tableName, args.outDir, ctd,ns0);
+            //>>>>>>> Stashed changes
 
             ar = new CodeArgumentReferenceExpression("reader");
             cc = new CodeConstructor();
@@ -105,12 +146,12 @@ namespace NSCs_codegen {
 #endif
 
             csc2 = new CodeStatementCollection();
-            csswitch = new CodeSnippetStatement("\t\t\tswitch(" + removeTrailingChar(generate(csCN, cdp, opts), ';') + ") {");
+            csswitch = new CodeSnippetStatement("\t\t\tswitch(" + removeTrailingChar(generate(csCN, cdp, args.opts), ';') + ") {");
             csc2.Add(csswitch);
 
             tmp = removeParensFrom(generate(new CodeExpressionStatement(
                                 new CodeBinaryOperatorExpression(vrI,
-                                    CodeBinaryOperatorType.Assign, new CodeBinaryOperatorExpression(vrI, CodeBinaryOperatorType.Add, ceOne))), cdp, opts));
+                                    CodeBinaryOperatorType.Assign, new CodeBinaryOperatorExpression(vrI, CodeBinaryOperatorType.Add, ceOne))), cdp, args.opts));
             csc.AddRange(new CodeStatement[] {
                         new CodeVariableDeclarationStatement(typeof(string),vr.VariableName),
                         csBlank,
@@ -150,7 +191,7 @@ namespace NSCs_codegen {
 #endif
                 addCaseStatementsTo(csc2, tmp,
                     new CodePropertyReferenceExpression(ceThis, propName),
-                    colType, ar, vrI, cdp, opts);
+                    colType, ar, vrI, cdp, args.opts);
             }
 
 #if FIELD_AND_PROPERTY
@@ -169,9 +210,29 @@ namespace NSCs_codegen {
             if (ccu != null) {
                 StringBuilder sb;
 
-                string fname = Path.Combine(outDir, className + "." + cdp.FileExtension);
+                #warning check this patch
+//<<<<<<< Updated upstream
+//                string fname = Path.Combine(outDir, className + "." + cdp.FileExtension);
+//                using (StringWriter sw = new StringWriter(sb = new StringBuilder())) {
+//                    cdp.GenerateCodeFromCompileUnit(ccu, sw, opts);
+//=======
+//<<<<<<< Updated upstream
+  //           StringBuilder sb;
+//                string fname = Path.Combine(outDir, className + "." + cdp.FileExtension);
+//=======
+                if (string.IsNullOrEmpty(args.outDir))
+                    args.outDir = Directory.GetCurrentDirectory();
+
+                if (!Directory.Exists(args.outDir))
+                    Directory.CreateDirectory(args.outDir);
+
+                //StringBuilder sb;
+                string fname = Path.Combine(args.outDir, className + "." + cdp.FileExtension);
+//>>>>>>> Stashed changes
                 using (StringWriter sw = new StringWriter(sb = new StringBuilder())) {
-                    cdp.GenerateCodeFromCompileUnit(ccu, sw, opts);
+                    //                    Trace.WriteLine("here");
+                    cdp.GenerateCodeFromCompileUnit(ccu, sw, args.opts);
+//>>>>>>> Stashed changes
                 }
                 if (showCode)
                     Trace.WriteLine("Code is:" + Environment.NewLine + sb.ToString());
@@ -181,6 +242,7 @@ namespace NSCs_codegen {
             }
         }
 
+//<<<<<<< Updated upstream
         static void addTablenameConstant(string tableName, CodeTypeDeclaration ctd) {
             addClassConstant(ctd, "TABLE_NAME", tableName);
         }
@@ -193,7 +255,10 @@ namespace NSCs_codegen {
             ctd.Members.Add(ftabname);
         }
 
-        static void generateCSVFrom(SqlDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd, CodeNamespace ns) {
+        static void generateCSVFrom(IDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd, CodeNamespace ns) {
+//=======
+//        static void generateCSVFrom(IDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd) {
+//>>>>>>> Stashed changes
             DataTable dt = reader.GetSchemaTable();
 
             //            writeCSV(constantValue, outDir, dt);
@@ -321,9 +386,9 @@ namespace NSCs_codegen {
 
         static string removeTrailingChar(string v1, char v2) {
             if (!string.IsNullOrEmpty(v1) && v2 != char.MinValue) {
-                //               Logger.logMethod(MethodBase.GetCurrentMethod());
+                //               Logger.log(MethodBase.GetCurrentMethod());
                 StringBuilder sb = new StringBuilder();
-                String tmp2;
+                string tmp2;
                 string[] blah = v1.Split('\r', '\n', v2);
 
                 foreach (string str in blah)
@@ -355,8 +420,8 @@ namespace NSCs_codegen {
             string outType = cdp.GetTypeOutput(new CodeTypeReference(colType));
 
             if (string.Compare(outType, "string", true) == 0) return new CodeSnippetExpression(outType + ".Empty");
-            else if (string.Compare(outType, "int", true) == 0) return new CodeSnippetExpression("Int32.MinValue");
-            else if (string.Compare(outType, "long", true) == 0) return new CodeSnippetExpression("Int64.MinValue");
+            else if (string.Compare(outType, "int", true) == 0) return new CodeSnippetExpression("int.MinValue");
+            else if (string.Compare(outType, "long", true) == 0) return new CodeSnippetExpression("long.MinValue");
             else if (string.Compare(outType, "bool", true) == 0) return new CodeSnippetExpression("false");
             else if (string.Compare(outType, "decimal", true) == 0) return new CodeSnippetExpression("Decimal.MinValue");
             else if (string.Compare(outType, "System.Guid", true) == 0) return new CodeSnippetExpression("Guid.Empty");
