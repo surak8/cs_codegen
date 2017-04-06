@@ -20,6 +20,7 @@ using System.Reflection;
 using NSMisc;
 using System.Data.SqlClient;
 using System.CodeDom.Compiler;
+using NSCs_codegen;
 
 namespace NSCs_codegen {
     public partial class cs_codegenDriver {
@@ -348,4 +349,24 @@ namespace NSCs_codegen {
             }
         }
     }
+
+}
+
+namespace NSMisc {
+    class CodeGenArgs {
+        public String nameSpace { get; internal set; }
+        public CodeGeneratorOptions opts { get; internal set; }
+        public String outDir { get; internal set; }
+        public CodeDomProvider provider { get; internal set; }
+        public DbProviderFactory providerFactory { get; internal set; }
+
+        internal static CodeGenArgs parseArgs(String[] args) {
+            throw new NotImplementedException();
+        }
+
+        internal void setProvider(String v) {
+            throw new NotImplementedException();
+        }
+    }
+
 }

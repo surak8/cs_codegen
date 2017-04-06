@@ -19,6 +19,7 @@ namespace NSCs_codegen {
         static readonly CodeExpression ceThis = new CodeThisReferenceExpression();
         static readonly CodeExpression ceValue = new CodePropertySetValueReferenceExpression();
         static readonly CodeExpression ceTrue = new CodePrimitiveExpression(true);
+        static readonly CodeExpression ceFalse = new CodePrimitiveExpression(false);
         static readonly CodeExpression ceZero = new CodePrimitiveExpression(0);
         static readonly CodeExpression ceOne = new CodePrimitiveExpression(1);
 
@@ -86,7 +87,7 @@ namespace NSCs_codegen {
 #if FIELD_AND_PROPERTY
             CodeMemberProperty p;
             CodeMemberField f;
-           CodeMemberProperty firstProp = null;
+            CodeMemberProperty firstProp = null;
             CodeMemberField firstField = null;
 
             p = null;
@@ -115,7 +116,6 @@ namespace NSCs_codegen {
             if (!string.IsNullOrEmpty(nameSpace))
                 ccu.Namespaces.Add(ns = new CodeNamespace(nameSpace));
             ns.Types.Add(ctd = new CodeTypeDeclaration(className));
-            //            ctd.BaseTypes.Add(new CodeTypeReference("Colt.Database.ColtBaseRecord"));
             ctd.BaseTypes.Add(new CodeTypeReference("ColtBaseRecord"));
             ctd.IsPartial = true;
 
@@ -171,7 +171,7 @@ namespace NSCs_codegen {
                 ctd.Members.AddRange(
                     new CodeTypeMember[] {
                         f=makeField(fldName ,colType),
-                        p=makeProperty(propName,f)
+                        p=makeProperty(propName,f,i)
                     });
                 if (firstProp == null)
                     firstProp = p;
@@ -207,6 +207,8 @@ namespace NSCs_codegen {
             ctd.Members.Add(cc);
             cc.Statements.AddRange(csc);
             cc.Parameters.Add(new CodeParameterDeclarationExpression("IDataReader", ar.ParameterName));
+
+            addColtStuff(ctd);
             if (ccu != null) {
                 StringBuilder sb;
 
@@ -242,17 +244,39 @@ namespace NSCs_codegen {
             }
         }
 
-//<<<<<<< Updated upstream
-        static void addTablenameConstant(string tableName, CodeTypeDeclaration ctd) {
-            addClassConstant(ctd, "TABLE_NAME", tableName);
+          static void addColtStuff(CodeTypeDeclaration ctd) {
+            CodeMemberMethod m;
+
+            ctd.Members.Add(m = new CodeMemberMethod());
+            //            m.Attributes = MemberAttributes.Family | MemberAttributes.Override;
+            m.Attributes = MemberAttributes.Family | MemberAttributes.Override;
+            m.Name = "isModified";
+            m.ReturnType = new CodeTypeReference(typeof(bool));
+            m.Statements.Add(new CodeMethodReturnStatement(ceFalse));
         }
 
-        static void addClassConstant(CodeTypeDeclaration ctd, string constantName, string constantValue) {
+        static void addTablenameConstant(string tableName, CodeTypeDeclaration ctd) {
+            CodeTypeMember ctm = addClassConstant(ctd, "TABLE_NAME", tableName);
+
+            addRegion("constants", ctm);
+        }
+
+        static void addRegion(string regionName, CodeTypeMember ctm) {
+            addRegion(regionName, ctm, ctm);
+        }
+
+        static void addRegion(string regionName, CodeTypeMember ctmStart, CodeTypeMember ctmEnd) {
+            ctmStart.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, regionName));
+            ctmEnd.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, regionName));
+        }
+
+        static CodeTypeMember addClassConstant(CodeTypeDeclaration ctd, string constantName, string constantValue) {
             CodeMemberField ftabname = new CodeMemberField(typeof(string), constantName);
 
             ftabname.InitExpression = new CodePrimitiveExpression(constantValue);
             ftabname.Attributes = MemberAttributes.Const | MemberAttributes.Public;
             ctd.Members.Add(ftabname);
+            return ftabname;
         }
 
         static void generateCSVFrom(IDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd, CodeNamespace ns) {
@@ -293,10 +317,12 @@ namespace NSCs_codegen {
             Debug.Print("generated: " + filename);
         }
 
+        const string MOD_VECTOR_NAME = "_modified";
+
         static void generateColumnCollection(CodeTypeDeclaration ctd, CodeNamespace ns, DataTable dt) {
             CodeTypeReference ctrColDef = new CodeTypeReference("ColumnDef");
             CodeExpression[] args = makeClassFieldCollection(dt, ctrColDef);
-            CodeMemberField f;
+            CodeMemberField f, f3;
             CodeMemberProperty f2;
 
             ns.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
@@ -307,11 +333,18 @@ namespace NSCs_codegen {
             f.Type = new CodeTypeReference("List", ctrColDef);
             f.InitExpression = new CodeObjectCreateExpression(f.Type, new CodeArrayCreateExpression(ctrColDef, args));
 
+            f3 = new CodeMemberField(new CodeTypeReference(new CodeTypeReference(typeof(bool)), 1),MOD_VECTOR_NAME);
+            f3.Attributes = 0;
+            f3.InitExpression = new CodeArrayCreateExpression(f3.Type, new CodePrimitiveExpression(args.Length));
+            ctd.Members.Add(f3);
+            addRegion("fields", f, f3);
+
             ctd.Members.Add(f2 = new CodeMemberProperty());
             f2.Name = "fields";
             f2.Attributes = MemberAttributes.Static | MemberAttributes.Public;
             f2.Type = f.Type;
             f2.GetStatements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(null, f.Name)));
+            addRegion("properties", f2);
         }
 
         static CodeExpression[] makeClassFieldCollection(DataTable dt, CodeTypeReference ctrColDef) {
@@ -385,18 +418,17 @@ namespace NSCs_codegen {
         }
 
         static string removeTrailingChar(string v1, char v2) {
-            if (!string.IsNullOrEmpty(v1) && v2 != char.MinValue) {
-                //               Logger.log(MethodBase.GetCurrentMethod());
-                StringBuilder sb = new StringBuilder();
-                string tmp2;
-                string[] blah = v1.Split('\r', '\n', v2);
+            StringBuilder sb;
+            string tmp2;
+            string[] blah;
 
+            if (!string.IsNullOrEmpty(v1) && v2 != char.MinValue) {
+                sb = new StringBuilder();
+                blah = v1.Split('\r', '\n', v2);
                 foreach (string str in blah)
                     if (!string.IsNullOrEmpty(tmp2 = str.Trim()))
                         sb.Append(tmp2);
                 return sb.ToString();
-
-                //     return v1.Replace(v2, char.MinValue);
             }
             return v1;
         }
@@ -427,7 +459,6 @@ namespace NSCs_codegen {
             else if (string.Compare(outType, "System.Guid", true) == 0) return new CodeSnippetExpression("Guid.Empty");
             else if (string.Compare(outType, "System.DateTime", true) == 0) return new CodeSnippetExpression("DateTime.MinValue");
             throw new InvalidOperationException("Unhandled type: " + colType.FullName);
-            //            return new CodeSnippetExpression(outType + ".MinValue");
         }
 
         static string findTypeMethod(Type colType, CodeDomProvider cdp) {
@@ -441,8 +472,6 @@ namespace NSCs_codegen {
             else if (string.Compare(outType, "System.Guid", true) == 0) return "GetGuid";
             else if (string.Compare(outType, "System.DateTime", true) == 0) return "GetDateTime";
             throw new InvalidOperationException("Unhandled type: " + colType.FullName);
-            //          return "UnhandledType_" + outType;
-
         }
 
         static string generate(CodeStatement cs, CodeDomProvider cdp, CodeGeneratorOptions opts) {
@@ -454,7 +483,9 @@ namespace NSCs_codegen {
             return sb.ToString();
         }
 
-        static CodeMemberProperty makeProperty(string propName, CodeMemberField f) {
+        static readonly CodeFieldReferenceExpression frModVector = new CodeFieldReferenceExpression(ceThis, MOD_VECTOR_NAME);
+
+        static CodeMemberProperty makeProperty(string propName, CodeMemberField f,int modVectorIndex) {
             CodeMemberProperty p = new CodeMemberProperty();
             CodeFieldReferenceExpression fr = new CodeFieldReferenceExpression(ceThis, f.Name);
 
@@ -463,6 +494,11 @@ namespace NSCs_codegen {
             p.Type = f.Type;
 
             p.SetStatements.Add(new CodeAssignStatement(fr, ceValue));
+            if (modVectorIndex >= 0)
+                p.SetStatements.Add(
+                    new CodeAssignStatement(
+                        new CodeArrayIndexerExpression(frModVector, new CodePrimitiveExpression(modVectorIndex)), 
+                        ceTrue));
             p.GetStatements.Add(new CodeMethodReturnStatement(fr));
             return p;
         }

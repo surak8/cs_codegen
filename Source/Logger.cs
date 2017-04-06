@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace NSCs_codegen {
+namespace NSMisc {
     /// <summary>logging class.</summary>
-    public static class Logger1 {
+    public static class Logger {
 
         #region fields
         /// <summary>controls logging-style.</summary>
