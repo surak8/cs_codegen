@@ -349,24 +349,24 @@ namespace NSCs_codegen {
             }
         }
     }
+    //class CodeGenArgs {
+    //    public String nameSpace { get; internal set; }
+    //    public CodeGeneratorOptions opts { get; internal set; }
+    //    public String outDir { get; internal set; }
+    //    public CodeDomProvider provider { get; internal set; }
+    //    public DbProviderFactory providerFactory { get; internal set; }
+
+    //    internal static CodeGenArgs parseArgs(String[] args) {
+    //        throw new NotImplementedException();
+    //    }
+
+    //    internal void setProvider(String v) {
+    //        throw new NotImplementedException();
+    //    }
+    //}
 
 }
 
-namespace NSMisc {
-    class CodeGenArgs {
-        public String nameSpace { get; internal set; }
-        public CodeGeneratorOptions opts { get; internal set; }
-        public String outDir { get; internal set; }
-        public CodeDomProvider provider { get; internal set; }
-        public DbProviderFactory providerFactory { get; internal set; }
+//namespace NSMisc {
 
-        internal static CodeGenArgs parseArgs(String[] args) {
-            throw new NotImplementedException();
-        }
-
-        internal void setProvider(String v) {
-            throw new NotImplementedException();
-        }
-    }
-
-}
+//}
