@@ -14,43 +14,26 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using NSMisc;
-using System.Data.SqlClient;
-using System.CodeDom.Compiler;
-using NSCs_codegen;
 
 namespace NSCs_codegen {
     public partial class cs_codegenDriver {
+        const string TRACER_NAME = "blah";
+
         [STAThread()]
         public static void Main(string[] args) {
-            int exitCode = 0;
-            TextWriterTraceListener twtl = null;
-            //<<<<<<< Updated upstream
-            //            string connStr, logFile, dir, appName, nameSpace, server, database;
-            //            const string TRACER_NAME = "blah";
-            //            CodeDomProvider cdp = new CSharpCodeProvider();
-            //            CodeGeneratorOptions opts = new CodeGeneratorOptions();
-            //            string outDir;
-            //            List<string> argsToProcess;
-            //            bool showHelp;
-
-
-            //            opts.BlankLinesBetweenMembers = false;
-            //            opts.ElseOnClosing = true;
-
-            //=======
-            string logFile, dir, appName, connStr;
-            const string TRACER_NAME = "blah";
             CodeGenArgs args2 = CodeGenArgs.parseArgs(args);
+            TextWriterTraceListener twtl = null;
+            string logFile, dir, appName, connStr;
+            int exitCode = 0;
 
             args2.setProvider("System.Data.SqlClient");
             //args2.setProvider("NSMyProvider");
-   //         args2.nameSpace = "Colt.Database";
 
-            //>>>>>>> Stashed changes
             appName = Assembly.GetEntryAssembly().GetName().Name;
 #if TRACE
             logFile = Environment.ExpandEnvironmentVariables("%TEMP%" + "\\" + appName + "\\" + appName + ".log");
@@ -60,15 +43,7 @@ namespace NSCs_codegen {
             twtl = new TextWriterTraceListener(logFile, TRACER_NAME);
             Trace.Listeners.Add(twtl);
 #endif
-            //<<<<<<< Updated upstream
             Trace.WriteLine(appName + " starts");
-
-            //List<string> argsToProcess;
-            //bool showHelp = false;
-            //string nameSpace, server, database, outDir;
-
-
-            //argsToProcess = parseArguments(args, out nameSpace, out server, out database, out showHelp, out outDir);
 
             if (string.IsNullOrEmpty(args2.database)) {
                 Console.Error.WriteLine("database not specified.  Cannot continue.");
@@ -88,7 +63,6 @@ namespace NSCs_codegen {
                 sb.ApplicationName = appName;
                 sb.DataSource = args2.server;
                 sb.InitialCatalog = args2.database;
-                //      sb.InitialCatalog = "QualityAndEngineering";
 #if false
             sb.IntegratedSecurity = false;
             sb.UserID = "operator";
@@ -101,15 +75,12 @@ namespace NSCs_codegen {
                 Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
 
                 Trace.WriteLine("Generate files in: " + args2.outDir);
-                //''        outDir = Path.Combine(Directory.GetCurrentDirectory(), "Generated_Files", sb.InitialCatalog);
                 try {
                     if (!Directory.Exists(args2.outDir))
                         Directory.CreateDirectory(args2.outDir);
                     using (SqlConnection conn = new SqlConnection(connStr)) {
                         conn.InfoMessage += Conn_InfoMessage;
                         conn.Open();
-                        //=======
-
                         Trace.WriteLine(appName + " starts");
                         extractDataFor(args2);
                         Trace.WriteLine(appName + " ends");
@@ -126,10 +97,9 @@ namespace NSCs_codegen {
 #endif
                 Environment.Exit(exitCode);
             }
-            //                }
         }
 
-        private static void Conn_InfoMessage(Object sender, SqlInfoMessageEventArgs e) {
+        static void Conn_InfoMessage(Object sender, SqlInfoMessageEventArgs e) {
             throw new NotImplementedException();
         }
 
@@ -146,8 +116,8 @@ namespace NSCs_codegen {
         static void blah() {
             DataTable dt = DbProviderFactories.GetFactoryClasses();
 
-            for (int nrow = 0 ; nrow < dt.Rows.Count ; nrow++) {
-                for (int ncol = 0 ; ncol < dt.Columns.Count ; ncol++)
+            for (int nrow = 0; nrow < dt.Rows.Count; nrow++) {
+                for (int ncol = 0; ncol < dt.Columns.Count; ncol++)
                     Debug.Print(dt.Columns[ncol].Caption + " = " + dt.Rows[nrow][ncol].ToString());
                 Debug.Print(string.Empty);
             }
@@ -169,49 +139,27 @@ namespace NSCs_codegen {
         }
 
         static void extractTablesAsClasses(CodeGenArgs args2) {
-            string connStr, outDir, appName = Assembly.GetEntryAssembly().GetName().Name, outdir;
+            string connStr, appName = Assembly.GetEntryAssembly().GetName().Name;
             DbProviderFactory factory = args2.providerFactory;
-            outdir = "QualityAndEngineering";
-#if TRACE
-#endif
+
             DbConnectionStringBuilder sb = args2.providerFactory.CreateConnectionStringBuilder();
 
             if (factory is System.Data.SqlClient.SqlClientFactory) {
                 ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).ApplicationName = appName;
                 ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).DataSource = args2.server;
                 ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).InitialCatalog = args2.database;
-     //           ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).InitialCatalog = outdir;
                 ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).IntegratedSecurity = true;
             }
 
             connStr = sb.ConnectionString;
             Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
-            outDir = Path.Combine(Directory.GetCurrentDirectory(), "Generated_Files", outdir);
             try {
                 using (DbConnection conn = factory.CreateConnection()) {
                     conn.ConnectionString = connStr;
-                    if (conn is System.Data.SqlClient.SqlConnection)
-                        ((System.Data.SqlClient.SqlConnection) conn).InfoMessage += infoMessageHandler; ;
-                    //   ((System.Data.SqlClient.SqlConnection) conn).InfoMessage += Conn_InfoMessage;
+                    if (conn is SqlConnection)
+                        ((SqlConnection) conn).InfoMessage += infoMessageHandler; ;
                     conn.Open();
-                    //>>>>>>> Stashed changes
-#if OTHER_TEST
-#else
-
-                    //<<<<<<< Updated upstream
-                    //                        //                    generateCodeForSingleTable(conn, "colt_employee", outDir, string.Empty, cdp, opts);
-                    //                        //                    generateCodeForSingleTable(conn, "query", outDir, string.Empty, cdp, opts);
-                    //                        generateCodeFromTables(conn, outDir, nameSpace, cdp, opts);
-                    //                        //                    generateCodeFromViews(conn, outDir, string.Empty, cdp, opts);
-                    //                        //                    generateCodeFromTables(conn, "KanbanTemp_CreateKanbanFile", Directory.GetCurrentDirectory(), string.Empty, cdp, opts);
-                    //=======
-                    //                    generateCodeForSingleTable(conn, "colt_employee", outDir, string.Empty, cdp, opts);
-                    //                    generateCodeForSingleTable(conn, "query", outDir, string.Empty, cdp, opts);
                     generateCodeFromTables(conn, args2);
-                    //                    generateCodeFromViews(conn, outDir, string.Empty, cdp, opts);
-                    //                    generateCodeFromTables(conn, "KanbanTemp_CreateKanbanFile", Directory.GetCurrentDirectory(), string.Empty, cdp, opts);
-                    //>>>>>>> Stashed changes
-#endif
                     conn.Close();
                 }
             } catch (Exception ex) {
@@ -220,72 +168,8 @@ namespace NSCs_codegen {
 
             }
         }
-        //    }
-
-        //<<<<<<< Updated upstream
-        /// <summary>parse the command-line parameters.</summary>
-        /// <param name="args"></param>
-        /// <param name="nameSpace"></param>
-        /// <param name="server"></param>
-        /// <param name="database"></param>
-        /// <param name="showHelp"></param>
-        /// <param name="outDir"></param>
-        /// <returns></returns>
-        static List<string> parseArguments(string[] args, out string nameSpace, out string server, out string database, out bool showHelp, out string outDir) {
-            List<string> argsToProcess = new List<string>();
-            int nargs = args.Length, len;
-            string anArg;
-
-            nameSpace = "Colt.Database";
-            server = "colt-sql";
-            outDir = null;
-            database = null;
-            //            database = "checkweigh_data_dev";
-
-            //        zipName = null;
-            showHelp = false;
-            argsToProcess = new List<string>();
-            for (int i = 0 ; i < nargs ; i++) {
-                anArg = args[i];
-                if ((len = anArg.Length) >= 2) {
-                    if (anArg[0] == '-' || anArg[0] == '/') {
-                        switch (anArg[1]) {
-                            case 'd':
-                                if (len > 2)
-                                    database = anArg.Substring(2).Trim();
-                                else { database = args[i + 1]; i++; }
-                                break;
-                            case 'n':
-                                if (len > 2)
-                                    nameSpace = anArg.Substring(2).Trim();
-                                else { nameSpace = args[i + 1]; i++; }
-                                break;
-                            case 'o':
-                                if (len > 2)
-                                    outDir = anArg.Substring(2).Trim();
-                                else { outDir = args[i + 1]; i++; }
-                                break;
-                            case 's':
-                                if (len > 2)
-                                    server = anArg.Substring(2).Trim();
-                                else { server = args[i + 1]; i++; }
-                                break;
-                            case 'h': showHelp = true; break;
-                            case '?': showHelp = true; break;
-                        }
-                    } else {
-                        argsToProcess.Add(anArg);
-                    }
-                }
-            }
-            return argsToProcess;
-            //}
-        }
-
 
         static void generateCodeFromViews(SqlConnection conn, CodeGenArgs args) {
-            //      static void generateCodeFromViews(SqlConnection conn, string outDir, string nameSpace, CodeDomProvider cdp, CodeGeneratorOptions opts) {
-            //            generateCodeSysObjectType(conn, outDir, nameSpace, cdp, opts, "V");
             generateCodeSysObjectType(conn, args, "V");
         }
         static void infoMessageHandler(object sender, System.Data.SqlClient.SqlInfoMessageEventArgs e) {
@@ -294,7 +178,6 @@ namespace NSCs_codegen {
 
         static void generateCodeFromViews(DbConnection conn, CodeGenArgs args) {
             generateCodeSysObjectType(conn, args, "V");
-            //>>>>>>> Stashed changes
         }
 
         static void generateCodeFromTables(DbConnection conn, CodeGenArgs args) {
@@ -319,7 +202,6 @@ namespace NSCs_codegen {
                 }
                 foreach (string aTable in names)
                     generateCodeForSingleTable(conn, aTable, args);
-
                 conn.Close();
             } catch (Exception ex) {
                 Logger.log(MethodBase.GetCurrentMethod(), ex);
@@ -335,39 +217,9 @@ namespace NSCs_codegen {
                 cmd.CommandType = CommandType.Text;
                 if (conn.State != ConnectionState.Open)
                     conn.Open();
-                //<<<<<<< Updated upstream
-                //                cmd.CommandText = "SELECT * FROM " + aTable + " WHERE 1=0";
-   //             reader = cmd.ExecuteReader();
-                //<<<<<<< Updated upstream
-                //                generateStuff(makeClassName(aTable), outDir, nameSpace, cdp, opts, reader, aTable);
-                //=======
-                //                generateStuff(makeClassName(aTable), outDir, nameSpace, cdp, opts, reader,aTable);
-                //=======
                 generateStuff(makeClassName(aTable), args, reader = cmd.ExecuteReader(), aTable);
-                //>>>>>>> Stashed changes
-                //>>>>>>> Stashed changes
                 reader.Close();
             }
         }
     }
-    //class CodeGenArgs {
-    //    public String nameSpace { get; internal set; }
-    //    public CodeGeneratorOptions opts { get; internal set; }
-    //    public String outDir { get; internal set; }
-    //    public CodeDomProvider provider { get; internal set; }
-    //    public DbProviderFactory providerFactory { get; internal set; }
-
-    //    internal static CodeGenArgs parseArgs(String[] args) {
-    //        throw new NotImplementedException();
-    //    }
-
-    //    internal void setProvider(String v) {
-    //        throw new NotImplementedException();
-    //    }
-    //}
-
 }
-
-//namespace NSMisc {
-
-//}

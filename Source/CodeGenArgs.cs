@@ -1,13 +1,12 @@
-using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Data.Common;
 using Microsoft.CSharp;
 
 namespace NSCs_codegen {
-
     class CodeGenArgs {
 
+        #region ctor
         internal CodeGenArgs() {
             provider = new CSharpCodeProvider();
             argsToProcess = new List<string>();
@@ -21,19 +20,25 @@ namespace NSCs_codegen {
             opts.BlankLinesBetweenMembers = false;
             opts.ElseOnClosing = true;
         }
+        #endregion
 
+        #region properties
         public List<string> argsToProcess { get; private set; }
-        public string outDir { get;   set; }
+        public string outDir { get; set; }
         public string nameSpace { get; set; }
         public string database { get; set; }
         public string server { get; set; }
         public bool showHelp { get; set; }
-        public CodeDomProvider provider { get;  set; }
-        public CodeGeneratorOptions opts { get;  set; }
-        internal  static CodeGenArgs parseArgs(string[] args) {
+        public CodeDomProvider provider { get; set; }
+        public CodeGeneratorOptions opts { get; set; }
+        internal DbProviderFactory providerFactory { get; private set; }
+        #endregion
+
+        #region methods
+        internal static CodeGenArgs parseArgs(string[] args) {
             CodeGenArgs ret = new CodeGenArgs();
             string anArg;
-            int len,nargs;
+            int len, nargs;
 
             nargs = args.Length;
             for (int i = 0; i < nargs; i++) {
@@ -65,7 +70,7 @@ namespace NSCs_codegen {
                             case '?': ret.showHelp = true; break;
                         }
                     } else {
-                      ret.  argsToProcess.Add(anArg);
+                        ret.argsToProcess.Add(anArg);
                     }
                 }
             }
@@ -75,6 +80,7 @@ namespace NSCs_codegen {
         internal void setProvider(string v) {
             providerFactory = DbProviderFactories.GetFactory(v);
         }
-        internal DbProviderFactory providerFactory { get; private set; }
+        #endregion
+
     }
 }
