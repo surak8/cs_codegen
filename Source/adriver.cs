@@ -48,7 +48,7 @@ namespace NSCs_codegen {
 
             args2.setProvider("System.Data.SqlClient");
             //args2.setProvider("NSMyProvider");
-            args2.nameSpace = "Colt.Database";
+   //         args2.nameSpace = "Colt.Database";
 
             //>>>>>>> Stashed changes
             appName = Assembly.GetEntryAssembly().GetName().Name;
@@ -178,9 +178,9 @@ namespace NSCs_codegen {
 
             if (factory is System.Data.SqlClient.SqlClientFactory) {
                 ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).ApplicationName = appName;
-                ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).DataSource = "colt-sql";
-                ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).InitialCatalog = "checkweigh_data_dev";
-                ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).InitialCatalog = outdir;
+                ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).DataSource = args2.server;
+                ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).InitialCatalog = args2.database;
+     //           ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).InitialCatalog = outdir;
                 ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).IntegratedSecurity = true;
             }
 
