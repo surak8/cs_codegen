@@ -47,7 +47,7 @@ namespace NSCs_codegen {
             CodeGenArgs args2 = CodeGenArgs.parseArgs(args);
 
             args2.setProvider("System.Data.SqlClient");
-            args2.setProvider("NSMyProvider");
+            //args2.setProvider("NSMyProvider");
             args2.nameSpace = "Colt.Database";
 
             //>>>>>>> Stashed changes
@@ -63,21 +63,22 @@ namespace NSCs_codegen {
             //<<<<<<< Updated upstream
             Trace.WriteLine(appName + " starts");
 
-            List<string> argsToProcess;
-            bool showHelp = false;
-            string nameSpace, server, database, outDir;
+            //List<string> argsToProcess;
+            //bool showHelp = false;
+            //string nameSpace, server, database, outDir;
 
 
-            argsToProcess = parseArguments(args, out nameSpace, out server, out database, out showHelp, out outDir);
-            if (string.IsNullOrEmpty(database)) {
+            //argsToProcess = parseArguments(args, out nameSpace, out server, out database, out showHelp, out outDir);
+
+            if (string.IsNullOrEmpty(args2.database)) {
                 Console.Error.WriteLine("database not specified.  Cannot continue.");
-                showHelp = true;
+                args2.showHelp = true;
             }
-            if (string.IsNullOrEmpty(outDir)) {
+            if (string.IsNullOrEmpty(args2.outDir)) {
                 Console.Error.WriteLine("output-directory not specified.  Cannot continue.");
-                showHelp = true;
+                args2.showHelp = true;
             }
-            if (showHelp) {
+            if (args2.showHelp) {
                 Console.Error.WriteLine("show help here");
                 exitCode = 2;
             } else {
@@ -85,8 +86,8 @@ namespace NSCs_codegen {
 
                 sb = new SqlConnectionStringBuilder();
                 sb.ApplicationName = appName;
-                sb.DataSource = server;
-                sb.InitialCatalog = database;
+                sb.DataSource = args2.server;
+                sb.InitialCatalog = args2.database;
                 //      sb.InitialCatalog = "QualityAndEngineering";
 #if false
             sb.IntegratedSecurity = false;
@@ -99,11 +100,11 @@ namespace NSCs_codegen {
 
                 Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
 
-                Trace.WriteLine("Generate files in: " + outDir);
+                Trace.WriteLine("Generate files in: " + args2.outDir);
                 //''        outDir = Path.Combine(Directory.GetCurrentDirectory(), "Generated_Files", sb.InitialCatalog);
                 try {
-                    if (!Directory.Exists(outDir))
-                        Directory.CreateDirectory(outDir);
+                    if (!Directory.Exists(args2.outDir))
+                        Directory.CreateDirectory(args2.outDir);
                     using (SqlConnection conn = new SqlConnection(connStr)) {
                         conn.InfoMessage += Conn_InfoMessage;
                         conn.Open();
@@ -336,7 +337,7 @@ namespace NSCs_codegen {
                     conn.Open();
                 //<<<<<<< Updated upstream
                 //                cmd.CommandText = "SELECT * FROM " + aTable + " WHERE 1=0";
-                reader = cmd.ExecuteReader();
+   //             reader = cmd.ExecuteReader();
                 //<<<<<<< Updated upstream
                 //                generateStuff(makeClassName(aTable), outDir, nameSpace, cdp, opts, reader, aTable);
                 //=======
