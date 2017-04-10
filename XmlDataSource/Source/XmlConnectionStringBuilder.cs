@@ -16,24 +16,26 @@ namespace NSXmlDatasource {
             base.Clear();
         }
 
-        public override Boolean ContainsKey(String keyword) {
+        public override bool ContainsKey(string keyword) {
             Logger.log(MethodBase.GetCurrentMethod());
             return base.ContainsKey(keyword);
         }
 
-        public override Int32 Count {
+        public override int Count {
             get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                return base.Count;
+                int ret = base.Count;
+
+                Logger.log(MethodBase.GetCurrentMethod() , " returning "+ret);
+                return ret;
             }
         }
 
-        public override Boolean Equals(Object obj) {
+        public override bool Equals(object obj) {
             Logger.log(MethodBase.GetCurrentMethod());
             return base.Equals(obj);
         }
 
-        public override Boolean EquivalentTo(DbConnectionStringBuilder connectionStringBuilder) {
+        public override bool EquivalentTo(DbConnectionStringBuilder connectionStringBuilder) {
             Logger.log(MethodBase.GetCurrentMethod());
             return base.EquivalentTo(connectionStringBuilder);
         }
@@ -45,47 +47,53 @@ namespace NSXmlDatasource {
 
         public override ICollection Keys {
             get {
-                Logger.log(MethodBase.GetCurrentMethod());
+                //Logger.log(MethodBase.GetCurrentMethod());
                 return base.Keys;
             }
         }
 
-        public override Boolean Remove(String keyword) {
+        public override bool Remove(string keyword) {
             Logger.log(MethodBase.GetCurrentMethod());
             return base.Remove(keyword);
         }
 
-        public override Boolean ShouldSerialize(String keyword) {
-            Logger.log(MethodBase.GetCurrentMethod());
-            return base.ShouldSerialize(keyword);
+        public override bool ShouldSerialize(string keyword) {
+            bool ret = base.ShouldSerialize(keyword);
+
+            Logger.log(MethodBase.GetCurrentMethod(),"keyword = "+keyword );
+            return ret;
         }
 
-        public override Object this[String keyword] {
+        public override object this[string keyword] {
             get {
                 Logger.log(MethodBase.GetCurrentMethod());
                 return base[keyword];
             }
 
             set {
-                Logger.log(MethodBase.GetCurrentMethod());
+       //         Logger.log(MethodBase.GetCurrentMethod(),keyword+" = "+value);
                 base[keyword] = value;
             }
         }
 
 
-        public override Boolean TryGetValue(String keyword, out Object value) {
-            Logger.log(MethodBase.GetCurrentMethod());
-            return base.TryGetValue(keyword, out value);
+        public override bool TryGetValue(string keyword, out object value) {
+            bool ret;
+
+      //      Logger.log(MethodBase.GetCurrentMethod());
+            ret=base.TryGetValue(keyword, out value);
+            Logger.log(MethodBase.GetCurrentMethod(),"returning "+ret+" for keyword '"+keyword+"'!");
+            return ret;
         }
 
         public override ICollection Values {
             get {
-                Logger.log(MethodBase.GetCurrentMethod());
+                //Logger.log(MethodBase.GetCurrentMethod());
                 return base.Values;
             }
         }
         #endregion
-        public override Int32 GetHashCode() {
+        public override int GetHashCode() {
             return base.GetHashCode();
         }
     }

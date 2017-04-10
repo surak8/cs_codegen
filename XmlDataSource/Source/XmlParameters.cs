@@ -1,11 +1,16 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Reflection;
 using NSMisc;
 
 namespace NSXmlDatasource {
     public class XmlParameters : DbParameterCollection {
+        readonly List<XmlParameter> _parms = new List<XmlParameter>();
+        readonly object _syncRoot = new object();
+        bool _fixedSize = false;
+        bool _readonly = false;
         #region ctor
         public XmlParameters() {
             Logger.log(MethodBase.GetCurrentMethod());
@@ -13,37 +18,16 @@ namespace NSXmlDatasource {
         #endregion
 
         #region DBParameterCollection implementation
-        public override int Count {
-            get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                throw new NotImplementedException();
-            }
-        }
+        public override int Count { get { return _parms.Count; } }
+        public override bool IsFixedSize { get { return _fixedSize; } }
+        public override bool IsReadOnly { get { return _readonly; } }
 
-        public override bool IsFixedSize {
-            get {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override bool IsReadOnly {
-            get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                throw new NotImplementedException();
-            }
-        }
-
-        public override bool IsSynchronized {
-            get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                throw new NotImplementedException();
-            }
-        }
+        public override bool IsSynchronized { get { return true; } }
 
         public override object SyncRoot {
             get {
                 Logger.log(MethodBase.GetCurrentMethod());
-                throw new NotImplementedException();
+                return _syncRoot;
             }
         }
 
@@ -132,6 +116,7 @@ namespace NSXmlDatasource {
             throw new NotImplementedException();
         }
 
-        #endregion    }
+        #endregion
+        //   }
     }
 }
