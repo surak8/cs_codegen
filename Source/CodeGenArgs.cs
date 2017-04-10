@@ -58,8 +58,8 @@ namespace NSCs_codegen {
                                 break;
                             case 'o':
                                 if (len > 2)
-                                    ret.outDir = anArg.Substring(2).Trim();
-                                else { ret.outDir = args[i + 1]; i++; }
+                                    ret.outDir = System.IO.Path.GetFullPath (anArg.Substring(2).Trim());
+                                else { ret.outDir = System.IO.Path.GetFullPath (args[i + 1]); i++; }
                                 break;
                             case 's':
                                 if (len > 2)

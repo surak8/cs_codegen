@@ -14,7 +14,8 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
+//using System.Data.SqlClient;
+//using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -28,7 +29,7 @@ namespace NSCs_codegen {
         public static void Main(string[] args) {
             CodeGenArgs args2 = CodeGenArgs.parseArgs(args);
             TextWriterTraceListener twtl = null;
-            string logFile, dir, appName, connStr;
+            string logFile, dir, appName;
             int exitCode = 0;
 
             args2.setProvider("System.Data.SqlClient");
@@ -57,34 +58,22 @@ namespace NSCs_codegen {
                 Console.Error.WriteLine("show help here");
                 exitCode = 2;
             } else {
-                SqlConnectionStringBuilder sb;
-
-                sb = new SqlConnectionStringBuilder();
-                sb.ApplicationName = appName;
-                sb.DataSource = args2.server;
-                sb.InitialCatalog = args2.database;
-#if false
-            sb.IntegratedSecurity = false;
-            sb.UserID = "operator";
-            sb.Password = "operator";
-#else
-                sb.IntegratedSecurity = true;
-#endif
-                connStr = sb.ConnectionString;
-
-                Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
-
                 Trace.WriteLine("Generate files in: " + args2.outDir);
                 try {
                     if (!Directory.Exists(args2.outDir))
                         Directory.CreateDirectory(args2.outDir);
-                    using (SqlConnection conn = new SqlConnection(connStr)) {
-                        conn.InfoMessage += Conn_InfoMessage;
-                        conn.Open();
-                        Trace.WriteLine(appName + " starts");
-                        extractDataFor(args2);
-                        Trace.WriteLine(appName + " ends");
-                    }
+#if true
+#   if TRACE
+                    Trace.WriteLine(appName + " starts");
+                    Trace.IndentLevel++;
+#   endif
+                    extractDataFor(args2);
+#   if TRACE
+                    Trace.IndentLevel--;
+                    Trace.WriteLine(appName + " ends");
+#   endif
+#else
+#endif
                 } catch (Exception ex) {
                     Logger.log(MethodBase.GetCurrentMethod(), ex);
                 } finally {
@@ -99,7 +88,7 @@ namespace NSCs_codegen {
             }
         }
 
-        static void Conn_InfoMessage(Object sender, SqlInfoMessageEventArgs e) {
+        static void Conn_InfoMessage(Object sender, System.Data.SqlClient.SqlInfoMessageEventArgs e) {
             throw new NotImplementedException();
         }
 
@@ -139,39 +128,44 @@ namespace NSCs_codegen {
         }
 
         static void extractTablesAsClasses(CodeGenArgs args2) {
-            string connStr, appName = Assembly.GetEntryAssembly().GetName().Name;
+            string connStr = null, appName = Assembly.GetEntryAssembly().GetName().Name, providerClass;
             DbProviderFactory factory = args2.providerFactory;
+            DbConnectionStringBuilder sb = null;
+            bool isSqlclient = false;
 
-            DbConnectionStringBuilder sb = args2.providerFactory.CreateConnectionStringBuilder();
+            providerClass = factory.GetType().FullName;
 
-            if (factory is System.Data.SqlClient.SqlClientFactory) {
-                ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).ApplicationName = appName;
-                ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).DataSource = args2.server;
-                ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).InitialCatalog = args2.database;
-                ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).IntegratedSecurity = true;
+            if (string.Compare(providerClass, "System.Data.SqlClient.SqlClientFactory", true) == 0) {
+                sb = args2.providerFactory.CreateConnectionStringBuilder();
+                sb.Add("Application Name", appName);
+                sb.Add("Data Source", args2.server);
+                sb.Add("Initial Catalog", args2.database);
+                sb.Add("Integrated Security", true);
+                isSqlclient = false;
+            } else {
+                Debug.Print("here");
             }
+            if (sb != null) {
+                connStr = sb.ConnectionString;
+                Trace.WriteLine("ConnectionString is " + connStr);
+                try {
+                    using (DbConnection conn = factory.CreateConnection()) {
+                        conn.ConnectionString = connStr;
+                        if (isSqlclient)
+                            ((System.Data.SqlClient.SqlConnection) conn).InfoMessage += infoMessageHandler; ;
+                        conn.Open();
+                        generateCodeFromTables(conn, args2);
+                        conn.Close();
+                    }
+                } catch (Exception ex) {
+                    Trace.WriteLine(ex.Message);
+                } finally {
 
-            connStr = sb.ConnectionString;
-            Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
-            try {
-                using (DbConnection conn = factory.CreateConnection()) {
-                    conn.ConnectionString = connStr;
-                    if (conn is SqlConnection)
-                        ((SqlConnection) conn).InfoMessage += infoMessageHandler; ;
-                    conn.Open();
-                    generateCodeFromTables(conn, args2);
-                    conn.Close();
                 }
-            } catch (Exception ex) {
-                Trace.WriteLine(ex.Message);
-            } finally {
-
             }
+
         }
 
-        static void generateCodeFromViews(SqlConnection conn, CodeGenArgs args) {
-            generateCodeSysObjectType(conn, args, "V");
-        }
         static void infoMessageHandler(object sender, System.Data.SqlClient.SqlInfoMessageEventArgs e) {
             Logger.log(MethodBase.GetCurrentMethod(), e.Message);
         }

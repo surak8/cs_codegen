@@ -4,30 +4,62 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
+using NSMisc;
 
 namespace NSCs_codegen {
     public partial class cs_codegenDriver {
-
+        #region constants
+        const string MOD_VECTOR_NAME = "_modified";
+        #endregion
+        
         #region fields
         static readonly CodeStatement csBlank = new CodeSnippetStatement();
         static readonly CodeStatement csBreak = new CodeSnippetStatement("\t\t\tbreak;");
 
         static readonly CodeExpression ceThis = new CodeThisReferenceExpression();
+        static readonly CodeExpression ceBase = new CodeBaseReferenceExpression();
         static readonly CodeExpression ceValue = new CodePropertySetValueReferenceExpression();
         static readonly CodeExpression ceTrue = new CodePrimitiveExpression(true);
         static readonly CodeExpression ceFalse = new CodePrimitiveExpression(false);
         static readonly CodeExpression ceZero = new CodePrimitiveExpression(0);
         static readonly CodeExpression ceOne = new CodePrimitiveExpression(1);
+        static readonly CodeFieldReferenceExpression frModVector = new CodeFieldReferenceExpression(ceThis, MOD_VECTOR_NAME);
 
         public static bool showCode = false;
-        static IDictionary<string, string> nameMap = new Dictionary<string, string>();
+        static readonly IDictionary<string, string> nameMap = new Dictionary<string, string>();
         #endregion
 
-        static void generateCodeFromProcedure(IDbConnection conn, string procName, CodeGenArgs args) {
+        static void generateCodeFromProcedure(DbConnection conn, string procName, CodeGenArgs args) {
+#if true
+
+            try {
+                using (DbCommand cmd = args.providerFactory.CreateCommand()) {
+                    cmd.CommandText = procName;
+                    cmd.Connection = conn;
+                    cmd.CommandType = CommandType.StoredProcedure;
+#if true
+                    IDataReader reader = cmd.ExecuteReader();
+
+                    generateStuff(makeClassName(procName), args, reader, procName);
+                    reader.Close();
+#else
+                    if (cmd.ExecuteNonQuery() > 0)
+                        Trace.WriteLine("success");
+                    else
+                        Trace.WriteLine("failure");
+#endif
+                }
+            } catch (DbException dbex) {
+                Logger.log(MethodBase.GetCurrentMethod(), dbex);
+            } catch (Exception ex) {
+                Logger.log(MethodBase.GetCurrentMethod(), ex);
+            } finally {
+            }
+#else
             SqlDataReader reader;
 
             try {
@@ -39,18 +71,18 @@ namespace NSCs_codegen {
             } catch (Exception ex) {
                 Trace.WriteLine(ex.Message);
             }
+#endif
         }
 
         static void generateStuff(string className, CodeGenArgs args, IDataReader reader, string tableName) {
             CodeCompileUnit ccu;
             CodeNamespace ns, ns0;
             CodeTypeDeclaration ctd;
-            string tmp, fldName, propName;
             Type colType;
+            StringBuilder sb;
 
             CodeDomProvider cdp = args.provider;
-#warning check this. 
-            string nameSpace = args.nameSpace;
+            string tmp, fldName, propName,nameSpace = args.nameSpace;
 
             CodeStatementCollection csc, csc2;
 
@@ -95,15 +127,9 @@ namespace NSCs_codegen {
             vr = new CodeVariableReferenceExpression("colName");
             vrI = new CodeVariableReferenceExpression("i");
             csc = new CodeStatementCollection();
-#if true
+
             csCN = new CodeAssignStatement(vr,
                 new CodeMethodInvokeExpression(ar, "GetName", vrI));
-#else
-            csCN = new CodeExpressionStatement(
-                new CodeBinaryOperatorExpression(vr, CodeBinaryOperatorType.Assign,
-                new CodeMethodInvokeExpression(ar, "GetName", vrI)));
-//                ))
-#endif
 
             csc2 = new CodeStatementCollection();
             csswitch = new CodeSnippetStatement("\t\t\tswitch(" + removeTrailingChar(generate(csCN, cdp, args.opts), ';') + ") {");
@@ -170,9 +196,7 @@ namespace NSCs_codegen {
 
             addColtStuff(ctd);
             if (ccu != null) {
-                StringBuilder sb;
 
-#warning check this patch
                 if (string.IsNullOrEmpty(args.outDir))
                     args.outDir = Directory.GetCurrentDirectory();
 
@@ -198,7 +222,7 @@ namespace NSCs_codegen {
             m.Attributes = MemberAttributes.Family | MemberAttributes.Override;
             m.Name = "isModified";
             m.ReturnType = new CodeTypeReference(typeof(bool));
-            m.Statements.Add(new CodeMethodReturnStatement(ceFalse));
+            m.Statements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression(ceBase, m.Name)));
         }
 
         static void addTablenameConstant(string tableName, CodeTypeDeclaration ctd) {
@@ -258,8 +282,6 @@ namespace NSCs_codegen {
             }
             Debug.Print("generated: " + filename);
         }
-
-        const string MOD_VECTOR_NAME = "_modified";
 
         static void generateColumnCollection(CodeTypeDeclaration ctd, CodeNamespace ns, DataTable dt) {
             CodeTypeReference ctrColDef = new CodeTypeReference("ColumnDef");
@@ -425,8 +447,6 @@ namespace NSCs_codegen {
             return sb.ToString();
         }
 
-        static readonly CodeFieldReferenceExpression frModVector = new CodeFieldReferenceExpression(ceThis, MOD_VECTOR_NAME);
-
         static CodeMemberProperty makeProperty(string propName, CodeMemberField f, int modVectorIndex) {
             CodeMemberProperty p = new CodeMemberProperty();
             CodeFieldReferenceExpression fr = new CodeFieldReferenceExpression(ceThis, f.Name);
@@ -503,12 +523,7 @@ namespace NSCs_codegen {
         }
 
         static string makeClassName(string procName) {
-#if true
             return fixup(procName, true);
-#else
-            return procName.Substring(0, 1).ToUpper() +
-                procName.Substring(1).ToLower();
-#endif
         }
     }
 }
