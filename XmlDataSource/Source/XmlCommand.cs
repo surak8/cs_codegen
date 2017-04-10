@@ -28,7 +28,7 @@ namespace NSXmlDatasource {
                 return _text;
             }
             set {
-    //            Logger.log(MethodBase.GetCurrentMethod());
+                //            Logger.log(MethodBase.GetCurrentMethod());
                 _text = value;
             }
         }
@@ -83,7 +83,7 @@ namespace NSXmlDatasource {
                 return _connection;
             }
             set {
-  //              Logger.log(MethodBase.GetCurrentMethod());
+                //              Logger.log(MethodBase.GetCurrentMethod());
                 _connection = value;
             }
         }
@@ -138,6 +138,4 @@ namespace NSXmlDatasource {
             return new XmlDataReader(behavior);
         }
     }
-
-    
 }

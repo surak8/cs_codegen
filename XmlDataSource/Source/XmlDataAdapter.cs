@@ -10,7 +10,7 @@ namespace NSXmlDatasource {
         }
         #region DbDataAdapter implementation
 
-        protected override System.Int32 AddToBatch(IDbCommand command) {
+        protected override int AddToBatch(IDbCommand command) {
             return base.AddToBatch(command);
         }
         #endregion DbDataAdapter implementation

@@ -12,7 +12,7 @@ using NSMisc;
 
 namespace NSXmlDatasource {
     public class XmlConnection : DbConnection {
-        [DebuggerBrowsable( DebuggerBrowsableState.Never )]
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         ConnectionState _state;
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         string _db;
@@ -30,16 +30,43 @@ namespace NSXmlDatasource {
             _svrVersion = "V1.0";
         }
 
-        
+
         #endregion
 
         #region DbConnection implementation
         #region properties
-        public override string ConnectionString { get {
+        public override string ConnectionString {
+            get {
                 Logger.log(MethodBase.GetCurrentMethod());
-                return _connStr; } set {
-            //    Logger.log(MethodBase.GetCurrentMethod());
-                _connStr = value; } }
+                return _connStr;
+            }
+            set {
+                //    Logger.log(MethodBase.GetCurrentMethod());
+                _connStr = value;
+                if (!string.IsNullOrEmpty(ConnectionString)) {
+                    //Debug.Print("here");
+                    string[] parts = ConnectionString.Split(';');
+                    int pos;
+                    string aKey, aValue;
+                    //Debug.Print("here");
+
+                    if (parts!=null)
+                        foreach(string aPart in parts) {
+                            pos = aPart.IndexOf('=');
+                            aKey = aPart.Substring(0, pos);
+                            aValue = aPart.Substring(pos + 1);
+                            //                 Debug.Print("here");
+                            if (string.Compare(aKey, "database", true) == 0) {
+                                this._db = aValue;
+                            } else if (string.Compare (aKey, "server", true) == 0) {
+                                this._datasrc = aValue;
+                            }else {
+                                Trace.WriteLine("unhandled key:" + aKey);
+                            }
+                        }
+                }
+            }
+        }
 
         public override string Database {
             get {
@@ -64,7 +91,7 @@ namespace NSXmlDatasource {
 
         public override ConnectionState State {
             get {
-      //         Logger.log(MethodBase.GetCurrentMethod());
+                //         Logger.log(MethodBase.GetCurrentMethod());
                 return _state;
             }
         }
@@ -164,12 +191,7 @@ namespace NSXmlDatasource {
             set {
                 base.Site = value;
             }
-        } 
+        }
         #endregion
     }
-
-
-
-   
-
 }

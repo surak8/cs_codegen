@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs_codegen", "cs_codegen.csproj", "{3C76C5FF-3378-470B-B584-ADE2ECD0260C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B0ECFABB-7ADA-467D-954F-64F11EA7F19D} = {B0ECFABB-7ADA-467D-954F-64F11EA7F19D}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlDatasource", "XmlDataSource\XmlDatasource.csproj", "{B0ECFABB-7ADA-467D-954F-64F11EA7F19D}"
 EndProject

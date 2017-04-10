@@ -14,7 +14,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -31,8 +30,8 @@ namespace NSCs_codegen {
             string logFile, dir, appName, connStr;
             int exitCode = 0;
 
-            args2.setProvider("System.Data.SqlClient");
-            //args2.setProvider("NSMyProvider");
+            //args2.setProvider("System.Data.SqlClient");
+            args2.setProvider("NSMyProvider");
 
             appName = Assembly.GetEntryAssembly().GetName().Name;
 #if TRACE
@@ -57,27 +56,30 @@ namespace NSCs_codegen {
                 Console.Error.WriteLine("show help here");
                 exitCode = 2;
             } else {
-                SqlConnectionStringBuilder sb;
+//                SqlConnectionStringBuilder sb;
 
-                sb = new SqlConnectionStringBuilder();
-                sb.ApplicationName = appName;
-                sb.DataSource = args2.server;
-                sb.InitialCatalog = args2.database;
-#if false
-            sb.IntegratedSecurity = false;
-            sb.UserID = "operator";
-            sb.Password = "operator";
-#else
-                sb.IntegratedSecurity = true;
-#endif
-                connStr = sb.ConnectionString;
+//                sb = new SqlConnectionStringBuilder();
+//                sb.ApplicationName = appName;
+//                sb.DataSource = args2.server;
+//                sb.InitialCatalog = args2.database;
+//#if false
+//            sb.IntegratedSecurity = false;
+//            sb.UserID = "operator";
+//            sb.Password = "operator";
+//#else
+//                sb.IntegratedSecurity = true;
+//#endif
+//                connStr = sb.ConnectionString;
 
-                Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
+//                Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
 
                 Trace.WriteLine("Generate files in: " + args2.outDir);
                 try {
                     if (!Directory.Exists(args2.outDir))
                         Directory.CreateDirectory(args2.outDir);
+#if true
+                    extractDataFor(args2);
+#else
                     using (SqlConnection conn = new SqlConnection(connStr)) {
                         conn.InfoMessage += Conn_InfoMessage;
                         conn.Open();
@@ -85,6 +87,7 @@ namespace NSCs_codegen {
                         extractDataFor(args2);
                         Trace.WriteLine(appName + " ends");
                     }
+#endif
                 } catch (Exception ex) {
                     Logger.log(MethodBase.GetCurrentMethod(), ex);
                 } finally {
@@ -99,9 +102,9 @@ namespace NSCs_codegen {
             }
         }
 
-        static void Conn_InfoMessage(Object sender, SqlInfoMessageEventArgs e) {
-            throw new NotImplementedException();
-        }
+        //static void Conn_InfoMessage(Object sender, System.Data.SqlClient.SqlInfoMessageEventArgs e) {
+        //    throw new NotImplementedException();
+        //}
 
         //    }
 
@@ -149,6 +152,14 @@ namespace NSCs_codegen {
                 ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).DataSource = args2.server;
                 ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).InitialCatalog = args2.database;
                 ((System.Data.SqlClient.SqlConnectionStringBuilder) sb).IntegratedSecurity = true;
+            } else {
+                Trace.WriteLine("Have a provider of " + factory.GetType().FullName);
+                Debug.Print("here");
+
+                //var avar = factory.CreateConnectionStringBuilder();
+                //Debug.Print("here");
+                sb.Add("database", args2.database);
+                sb.Add("server", args2.server);
             }
 
             connStr = sb.ConnectionString;
@@ -156,8 +167,8 @@ namespace NSCs_codegen {
             try {
                 using (DbConnection conn = factory.CreateConnection()) {
                     conn.ConnectionString = connStr;
-                    if (conn is SqlConnection)
-                        ((SqlConnection) conn).InfoMessage += infoMessageHandler; ;
+                    if (conn is System.Data.SqlClient.SqlConnection)
+                        ((System.Data.SqlClient.SqlConnection) conn).InfoMessage += infoMessageHandler; ;
                     conn.Open();
                     generateCodeFromTables(conn, args2);
                     conn.Close();
@@ -169,7 +180,7 @@ namespace NSCs_codegen {
             }
         }
 
-        static void generateCodeFromViews(SqlConnection conn, CodeGenArgs args) {
+        static void generateCodeFromViews(System.Data.SqlClient.SqlConnection conn, CodeGenArgs args) {
             generateCodeSysObjectType(conn, args, "V");
         }
         static void infoMessageHandler(object sender, System.Data.SqlClient.SqlInfoMessageEventArgs e) {
