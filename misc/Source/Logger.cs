@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 
 namespace NSMisc {
     /// <summary>logging class.</summary>
@@ -71,6 +72,17 @@ namespace NSMisc {
                 string.Compare(mb.Name, ConstructorInfo.ConstructorName, true) == 0 ||
                 string.Compare(mb.Name, ConstructorInfo.TypeConstructorName, true) == 0
                 ) ? string.Empty : ".") + mb.Name;
+        }
+
+        public static string extractMessage(Exception ex) {
+            Exception ex0 = ex;
+            StringBuilder sb = new StringBuilder();
+
+            while (ex0 != null) {
+                sb.Append("[" + ex0.GetType().Name + "] " + ex0.Message + Environment.NewLine);
+                ex0 = ex0.InnerException;
+            }
+            return sb.ToString();
         }
         #endregion misc. methods
         #endregion methods

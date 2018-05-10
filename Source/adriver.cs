@@ -9,13 +9,15 @@
 //     the code is regenerated.
 // </auto-generated>
 //------------------------------------------------------------------------------
+//
+// -d Checkweigh_Data_Dev -o C:\Users\RTCOUSENS\colt\NewProjects\FMSTrackingSuite\FMSTracking\FMSTrackingDAL\Source\generated -n Colt.Database.FMSS -t fmss_build_line  -t fmss_build_trans -t fmss_gather_type -t fmss_upper_sn_data
+// C:\Users\RTCOUSENS\colt\NewProjects\FMSTrackingSuite\FMSTracking\FMSTrackingDAL
+//
 
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-//using System.Data.SqlClient;
-//using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -29,7 +31,7 @@ namespace NSCs_codegen {
         public static void Main(string[] args) {
             CodeGenArgs args2 = CodeGenArgs.parseArgs(args);
             TextWriterTraceListener twtl = null;
-            string logFile, dir, appName;
+            string logFile, dir, appName,errMsg;
             int exitCode = 0;
 
             args2.setProvider("System.Data.SqlClient");
@@ -55,27 +57,50 @@ namespace NSCs_codegen {
                 args2.showHelp = true;
             }
             if (args2.showHelp) {
-                Console.Error.WriteLine("show help here");
+                args2.showHelpText(Console.Error);
+                //showHelp();
                 exitCode = 2;
             } else {
+//                SqlConnectionStringBuilder sb;
+
+//                sb = new SqlConnectionStringBuilder();
+//                sb.ApplicationName = appName;
+//                sb.DataSource = args2.server;
+//                sb.InitialCatalog = args2.database;
+//#if false
+//            sb.IntegratedSecurity = false;
+//            sb.UserID = "operator";
+//            sb.Password = "operator";
+//#else
+//                sb.IntegratedSecurity = true;
+//#endif
+//                connStr = sb.ConnectionString;
+
+//                Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
+
                 Trace.WriteLine("Generate files in: " + args2.outDir);
                 try {
                     if (!Directory.Exists(args2.outDir))
                         Directory.CreateDirectory(args2.outDir);
 #if true
-#   if TRACE
-                    Trace.WriteLine(appName + " starts");
-                    Trace.IndentLevel++;
-#   endif
                     extractDataFor(args2);
-#   if TRACE
-                    Trace.IndentLevel--;
-                    Trace.WriteLine(appName + " ends");
-#   endif
 #else
+                    using (SqlConnection conn = new SqlConnection(connStr)) {
+                        conn.InfoMessage += Conn_InfoMessage;
+                        conn.Open();
+                        Trace.WriteLine(appName + " starts");
+                        extractDataFor(args2);
+                        Trace.WriteLine(appName + " ends");
+                    }
 #endif
                 } catch (Exception ex) {
-                    Logger.log(MethodBase.GetCurrentMethod(), ex);
+                    errMsg = Logger.extractMessage(ex)+ Environment.NewLine + ex.StackTrace;
+                    //Logger.log(MethodBase.GetCurrentMethod(), ex);
+#if TRACE
+                    Trace.WriteLine(errMsg);
+#endif
+                    Console.Error.WriteLine(errMsg);
+                    exitCode = 1;
                 } finally {
 
                 }
@@ -88,9 +113,9 @@ namespace NSCs_codegen {
             }
         }
 
-        static void Conn_InfoMessage(Object sender, System.Data.SqlClient.SqlInfoMessageEventArgs e) {
-            throw new NotImplementedException();
-        }
+        //static void Conn_InfoMessage(Object sender, System.Data.SqlClient.SqlInfoMessageEventArgs e) {
+        //    throw new NotImplementedException();
+        //}
 
         //    }
 
@@ -99,6 +124,8 @@ namespace NSCs_codegen {
                 extractTablesAsClasses(args2);
             } catch (Exception ex) {
                 Logger.log(MethodBase.GetCurrentMethod(), ex);
+                //throw new ApplicationException("here-2", ex);
+                throw;
             }
         }
 
@@ -159,6 +186,8 @@ namespace NSCs_codegen {
                     }
                 } catch (Exception ex) {
                     Trace.WriteLine(ex.Message);
+                    //throw new ApplicationException("another", ex);
+                    throw;
                 } finally {
 
                 }
@@ -175,7 +204,22 @@ namespace NSCs_codegen {
         }
 
         static void generateCodeFromTables(DbConnection conn, CodeGenArgs args) {
-            generateCodeSysObjectType(conn, args, "U");
+            if (args.tables.Count > 0) {
+                try {
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+                    foreach (string tableName in args.tables)
+                        generateCodeForSingleTable(conn, tableName, args);
+
+                    conn.Close();
+                } catch (Exception ex) {
+                    Logger.log(MethodBase.GetCurrentMethod(), ex);
+
+                    //throw new ApplicationException("error", ex);
+                    throw;
+                }
+            } else
+                generateCodeSysObjectType(conn, args, "U");
         }
 
         static void generateCodeSysObjectType(DbConnection conn, CodeGenArgs args, string objType) {
