@@ -32,6 +32,8 @@ namespace NSCs_codegen {
         public string nameSpace { get; set; }
         public string database { get; set; }
         public string server { get; set; }
+        public string userName { get; set; }
+        public string password { get; set; }
         public List<string> tables { get; private set; }
         public bool showHelp { get; set; }
         public bool generateFields { get; set; }
@@ -57,7 +59,7 @@ namespace NSCs_codegen {
                                     ret.database = anArg.Substring(2).Trim();
                                 else { ret.database = args[i + 1]; i++; }
                                 break;
-                            case 'f': ret.generateFields = true;break;
+                            case 'f': ret.generateFields = true; break;
                             case 'n':
                                 if (len > 2)
                                     ret.nameSpace = anArg.Substring(2).Trim();
@@ -68,10 +70,20 @@ namespace NSCs_codegen {
                                     ret.outDir = Path.GetFullPath(anArg.Substring(2).Trim());
                                 else { ret.outDir = Path.GetFullPath(args[i + 1]); i++; }
                                 break;
-                            case 's':
+                            case 'P':
+                                if (len > 2)
+                                    ret.password = anArg.Substring(2).Trim();
+                                else { ret.password = args[i + 1].Trim(); i++; }
+                                break;
+                            case 'S':
                                 if (len > 2)
                                     ret.server = anArg.Substring(2).Trim();
                                 else { ret.server = args[i + 1]; i++; }
+                                break;
+                            case 'U':
+                                if (len > 2)
+                                    ret.userName = anArg.Substring(2).Trim();
+                                else { ret.userName = args[i + 1].Trim(); i++; }
                                 break;
                             case 't':
                                 if (len > 2)
@@ -80,7 +92,7 @@ namespace NSCs_codegen {
                                 break;
                             case 'h': ret.showHelp = true; break;
                             case '?': ret.showHelp = true; break;
-                            default:Console.Error.WriteLine("Unhandled arg: " + anArg);ret.showHelp = true;break;
+                            default: Console.Error.WriteLine("Unhandled arg: " + anArg); ret.showHelp = true; break;
                         }
                     } else {
                         ret.argsToProcess.Add(anArg);
@@ -105,7 +117,9 @@ namespace NSCs_codegen {
                 "[-d database] " +
                 "[-n namespace] " +
                 "[-o outdir] " +
-                "[-s server] " +
+                "[-P password] " +
+                "[-U username] " +
+                "[-S server] " +
                 "[-t table  ...[-t table]]");
         }
         #endregion

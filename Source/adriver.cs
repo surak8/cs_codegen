@@ -35,6 +35,13 @@ namespace NSCs_codegen {
             int exitCode = 0;
 
             args2.setProvider("System.Data.SqlClient");
+            if (args2.providerFactory is System.Data.SqlClient.SqlClientFactory) {
+                System.Data.SqlClient.SqlConnectionStringBuilder scsb;
+
+                scsb = new System.Data.SqlClient.SqlConnectionStringBuilder();
+                Trace.WriteLine("here");
+            }
+            //if (args2.provider is )
             //args2.setProvider("NSMyProvider");
 
             appName = Assembly.GetEntryAssembly().GetName().Name;
@@ -167,6 +174,13 @@ namespace NSCs_codegen {
                 sb.Add("Application Name", appName);
                 sb.Add("Data Source", args2.server);
                 sb.Add("Initial Catalog", args2.database);
+                if (!string.IsNullOrEmpty(args2.userName) && !string.IsNullOrEmpty(args2.password)){
+                    //sb.use
+                    System.Data.SqlClient.SqlConnectionStringBuilder sb2;
+                    sb2 = sb as System.Data.SqlClient.SqlConnectionStringBuilder;
+                    sb2.UserID = args2.userName;
+                    sb2.Password = args2.password;
+                }else
                 sb.Add("Integrated Security", true);
                 isSqlclient = false;
             } else {
