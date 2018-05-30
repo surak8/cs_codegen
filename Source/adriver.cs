@@ -13,6 +13,9 @@
 // -d Checkweigh_Data_Dev -o C:\Users\RTCOUSENS\colt\NewProjects\FMSTrackingSuite\FMSTracking\FMSTrackingDAL\Source\generated -n Colt.Database.FMSS -t fmss_build_line  -t fmss_build_trans -t fmss_gather_type -t fmss_upper_sn_data
 // C:\Users\RTCOUSENS\colt\NewProjects\FMSTrackingSuite\FMSTracking\FMSTrackingDAL
 //
+// -Uazuresql@colt-sql.database.windows.net -P"4SQL#DBAdm" -S "colt-sql.database.windows.net" -d blah_blah -o test -t fms_weight_type
+//
+// -f -d checkweigh_data_dev -o C:\Users\RTCOUSENS\colt\NewProjects\dataset_editor\Source\DAL -n NSDSEdit -t colt_sn_info -t colt_employee
 
 using System;
 using System.Collections.Generic;
@@ -31,16 +34,16 @@ namespace NSCs_codegen {
         public static void Main(string[] args) {
             CodeGenArgs args2 = CodeGenArgs.parseArgs(args);
             TextWriterTraceListener twtl = null;
-            string logFile, dir, appName,errMsg;
+            string logFile, dir, appName, errMsg;
             int exitCode = 0;
 
             args2.setProvider("System.Data.SqlClient");
-            if (args2.providerFactory is System.Data.SqlClient.SqlClientFactory) {
-                System.Data.SqlClient.SqlConnectionStringBuilder scsb;
+            //if (args2.providerFactory is System.Data.SqlClient.SqlClientFactory) {
+            //    System.Data.SqlClient.SqlConnectionStringBuilder scsb;
 
-                scsb = new System.Data.SqlClient.SqlConnectionStringBuilder();
-                Trace.WriteLine("here");
-            }
+            //    scsb = new System.Data.SqlClient.SqlConnectionStringBuilder();
+            //    //Trace.WriteLine("here");
+            //}
             //if (args2.provider is )
             //args2.setProvider("NSMyProvider");
 
@@ -68,22 +71,22 @@ namespace NSCs_codegen {
                 //showHelp();
                 exitCode = 2;
             } else {
-//                SqlConnectionStringBuilder sb;
+                //                SqlConnectionStringBuilder sb;
 
-//                sb = new SqlConnectionStringBuilder();
-//                sb.ApplicationName = appName;
-//                sb.DataSource = args2.server;
-//                sb.InitialCatalog = args2.database;
-//#if false
-//            sb.IntegratedSecurity = false;
-//            sb.UserID = "operator";
-//            sb.Password = "operator";
-//#else
-//                sb.IntegratedSecurity = true;
-//#endif
-//                connStr = sb.ConnectionString;
+                //                sb = new SqlConnectionStringBuilder();
+                //                sb.ApplicationName = appName;
+                //                sb.DataSource = args2.server;
+                //                sb.InitialCatalog = args2.database;
+                //#if false
+                //            sb.IntegratedSecurity = false;
+                //            sb.UserID = "operator";
+                //            sb.Password = "operator";
+                //#else
+                //                sb.IntegratedSecurity = true;
+                //#endif
+                //                connStr = sb.ConnectionString;
 
-//                Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
+                //                Trace.WriteLine("ConnectionString is " + (connStr = sb.ConnectionString));
 
                 Trace.WriteLine("Generate files in: " + args2.outDir);
                 try {
@@ -101,7 +104,7 @@ namespace NSCs_codegen {
                     }
 #endif
                 } catch (Exception ex) {
-                    errMsg = Logger.extractMessage(ex)+ Environment.NewLine + ex.StackTrace;
+                    errMsg = Logger.extractMessage(ex) + Environment.NewLine + ex.StackTrace;
                     //Logger.log(MethodBase.GetCurrentMethod(), ex);
 #if TRACE
                     Trace.WriteLine(errMsg);
@@ -174,17 +177,17 @@ namespace NSCs_codegen {
                 sb.Add("Application Name", appName);
                 sb.Add("Data Source", args2.server);
                 sb.Add("Initial Catalog", args2.database);
-                if (!string.IsNullOrEmpty(args2.userName) && !string.IsNullOrEmpty(args2.password)){
+                if (!string.IsNullOrEmpty(args2.userName) && !string.IsNullOrEmpty(args2.password)) {
                     //sb.use
                     System.Data.SqlClient.SqlConnectionStringBuilder sb2;
                     sb2 = sb as System.Data.SqlClient.SqlConnectionStringBuilder;
                     sb2.UserID = args2.userName;
                     sb2.Password = args2.password;
-                }else
-                sb.Add("Integrated Security", true);
+                } else
+                    sb.Add("Integrated Security", true);
                 isSqlclient = false;
             } else {
-                Debug.Print("here");
+                Debug.Print("user/pass here?");
             }
             if (sb != null) {
                 connStr = sb.ConnectionString;

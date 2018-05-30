@@ -20,8 +20,9 @@ namespace NSCs_codegen {
             database = null;
 
             opts = new CodeGeneratorOptions();
-            opts.BlankLinesBetweenMembers = false;
-            opts.ElseOnClosing = true;
+            //opts.BlankLinesBetweenMembers = false;
+            //opts.ElseOnClosing = true;
+
             tables = new List<string>();
         }
         #endregion
@@ -54,6 +55,7 @@ namespace NSCs_codegen {
                 if ((len = anArg.Length) >= 2) {
                     if (anArg[0] == '-' || anArg[0] == '/') {
                         switch (anArg[1]) {
+                            case 'B':ret.provider = new Microsoft.VisualBasic.VBCodeProvider();break;
                             case 'd':
                                 if (len > 2)
                                     ret.database = anArg.Substring(2).Trim();
@@ -111,7 +113,8 @@ namespace NSCs_codegen {
 
             a = Assembly.GetEntryAssembly();
             tw.WriteLine(Environment.NewLine+"usage: " + a.GetName().Name +" "+
-                "[-f] "+
+                "[-B] " +
+                "[-f] " +
                 "[-h] " +
                 "[-?] " +
                 "[-d database] " +

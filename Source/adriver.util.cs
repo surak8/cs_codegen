@@ -114,16 +114,17 @@ namespace NSCs_codegen {
                 implementPropertyChanged(ns0, ctd);
             ctd.IsPartial = true;
             addTablenameConstant(tableName, ctd);
-            generateCSVFrom(reader, tableName, args.outDir, ctd, ns0);
+            generateCSVFrom(reader, tableName, args.outDir, ctd, ns0,cdp);
             ctd.Members.Add(createDefaultConstructor());
             ctd.Members.Add(addOtherConstructor(args, reader, ctd, cdp));
-            ctd.Members.Add(addColtStuff());
-            //ctd.Members.Add(setModifiedFlag());
-            //ctd.Members.Add(resetModifiedFlags());
-            ctd.Members.AddRange(addAbstractItems(new CodeTypeReference (ctd.Name )));
+            ctd.Members.AddRange(addColtStuff(args, ctd, ns0,cdp));
+            ctd.Members.AddRange(addAbstractItems(new CodeTypeReference (ctd.Name ),args.provider));
 
             if (ccu != null) {
 
+                foreach(CodeTypeMember ctm in ctd.Members ) {
+                    Trace.WriteLine(ctm.GetType().FullName + ":" + ctm.Name);
+                }
                 if (string.IsNullOrEmpty(args.outDir))
                     args.outDir = Directory.GetCurrentDirectory();
 
@@ -142,7 +143,7 @@ namespace NSCs_codegen {
             }
         }
 
-        static CodeTypeMemberCollection addAbstractItems(CodeTypeReference ctr) {
+        static CodeTypeMemberCollection addAbstractItems(CodeTypeReference ctr,CodeDomProvider cdp) {
             CodeTypeMemberCollection ret = new CodeTypeMemberCollection();
             CodeMemberMethod m;
 
@@ -151,14 +152,14 @@ namespace NSCs_codegen {
                     addFieldList(
                         new CodeTypeReference("List", new CodeTypeReference("ColumnDef")),
                         "fieldList",
-                        new CodeFieldReferenceExpression(new CodeTypeReferenceExpression(ctr), "_fields")),
+                        new CodeFieldReferenceExpression(new CodeTypeReferenceExpression(ctr), FNAME_FIELDS)),
                     m=addSetModified("setModified",frModVector),
-                    addResetModified("resetModifyFlags",m.Name,frModVector)
+                    addResetModified("resetModifyFlags",m.Name,frModVector,cdp)
                 });
             return ret;
         }
 
-        static CodeTypeMember addResetModified(string v, string name, CodeFieldReferenceExpression fre) {
+        static CodeTypeMember addResetModified(string v, string name, CodeFieldReferenceExpression fre, CodeDomProvider cdp) {
             // protected override void resetModifyFlags() {
             //      for (int i = _modified.GetLowerBound(0); i < _modified.GetUpperBound(0); i++)
             //          setModified(i, false);
@@ -166,7 +167,11 @@ namespace NSCs_codegen {
 
             CodeMemberMethod m = new CodeMemberMethod();
             CodeVariableReferenceExpression vri = new CodeVariableReferenceExpression("i");
+            CodeStatement css;
 
+            css = new CodeSnippetStatement(vri.VariableName + "++");
+            if (cdp is Microsoft.VisualBasic.VBCodeProvider)
+                css = new CodeAssignStatement(vri, new CodeBinaryOperatorExpression(vri, CodeBinaryOperatorType.Add, ceOne));
             m.Name = v;
             m.Attributes = MemberAttributes.Override | MemberAttributes.Family;
             m.Statements.Add(
@@ -176,7 +181,7 @@ namespace NSCs_codegen {
                     new CodeBinaryOperatorExpression(
                         vri, CodeBinaryOperatorType.LessThan,
                         new CodeMethodInvokeExpression(fre, "GetUpperBound", ceZero)),
-                    new CodeSnippetStatement(vri.VariableName + "++"),
+                    css,
 
                     new CodeExpressionStatement(
                         new CodeMethodInvokeExpression(ceThis, name, vri, ceFalse))));
@@ -233,17 +238,27 @@ namespace NSCs_codegen {
 
             cc.Comments.Add(addParmComment(ar.ParameterName));
 
-            tmp = removeParensFrom(generate(new CodeExpressionStatement(
-                                new CodeBinaryOperatorExpression(vrI,
-                                    CodeBinaryOperatorType.Assign, new CodeBinaryOperatorExpression(vrI, CodeBinaryOperatorType.Add, ceOne))), cdp, args.opts));
-            csc.AddRange(new CodeStatement[] {
-                        new CodeVariableDeclarationStatement(typeof(string),vr.VariableName),
-                        csBlank,
-                        cis=new CodeIterationStatement(
-                            new CodeVariableDeclarationStatement(typeof(int),vrI.VariableName,ceZero),
-                            new CodeBinaryOperatorExpression (vrI,  CodeBinaryOperatorType.LessThan ,
-                            new CodePropertyReferenceExpression (ar,"FieldCount")),
-                            new CodeSnippetStatement (tmp))
+            tmp = removeParensFrom(
+                generate(
+                    new CodeExpressionStatement(
+                        new CodeBinaryOperatorExpression(
+                            vrI,
+                            CodeBinaryOperatorType.Assign, 
+                            new CodeBinaryOperatorExpression(vrI, CodeBinaryOperatorType.Add, ceOne))),
+                    cdp, 
+                    args.opts));
+            CodeStatement csinc;
+            csinc = new CodeAssignStatement(
+                vrI, new CodeBinaryOperatorExpression(vrI, CodeBinaryOperatorType.Add, ceOne));
+            csc.AddRange(
+                new CodeStatement[] {
+                    new CodeVariableDeclarationStatement(typeof(string),vr.VariableName),
+                    csBlank,
+                    cis=new CodeIterationStatement(
+                        new CodeVariableDeclarationStatement(typeof(int),vrI.VariableName,ceZero),
+                        new CodeBinaryOperatorExpression (vrI,  CodeBinaryOperatorType.LessThan ,
+                        new CodePropertyReferenceExpression (ar,"FieldCount")),
+                        csinc)
                     });
 
             cis.Statements.AddRange(doSomething(args, reader, ctd, cdp, ar, vrI, vr));
@@ -268,6 +283,10 @@ namespace NSCs_codegen {
             csCN = new CodeAssignStatement(vr,
                 new CodeMethodInvokeExpression(ar, "GetName", vrI));
             csswitch = new CodeSnippetStatement("\t\t\tswitch(" + removeTrailingChar(generate(csCN, cdp, args.opts), ';') + ") {");
+            if (cdp is Microsoft.VisualBasic.VBCodeProvider) {
+                csc2.Add(csCN);
+                csswitch = new CodeSnippetStatement("\t\t\tselect case " + vr.VariableName);
+            }
             csc2.Add(csswitch);
 
             firstField = currField = null;
@@ -293,15 +312,40 @@ namespace NSCs_codegen {
                     firstField = f;
 #else
 #if true
-                propType = cdp.GetTypeOutput(new CodeTypeReference(isCharDatatype ? typeof(char) : colType));
+                CodeTypeReference ctr0;
+
+                propType = cdp.GetTypeOutput(ctr0=new CodeTypeReference(isCharDatatype ? typeof(char) : colType));
                 if (args.generateFields) {
                     currProp = addFieldPropertyPair(ctd, colType, isCharDatatype, tmp, ref currField, i);
                     if (firstProp == null)
                         firstProp = currProp;
                     if (firstField == null)
                         firstField = currField;
-                } else
-                    ctd.Members.Add(new CodeSnippetTypeMember("\t\tpublic " + propType + " " + makePropName(tmp) + " { get; set; }\r\n"));
+                } else {
+                    if (cdp is Microsoft.VisualBasic.VBCodeProvider) {
+                        CodeMemberProperty p;
+                        CodeMemberField f;
+                        //CodeTypeReference ctr = new CodeTypeReference(propType);
+                        CodeFieldReferenceExpression fr = new CodeFieldReferenceExpression(ceThis, makeFieldName(tmp));
+
+                        //propType = new CodeTypeReference(colType);
+                        ctd.Members.AddRange(
+                            new CodeTypeMember[] {
+                                p = new CodeMemberProperty(),
+                                f=new CodeMemberField(ctr0,fr.FieldName)
+                            });
+                        p.Attributes = MemberAttributes.Public;
+                        p.Type = f.Type;
+                        p.Name = makePropName(tmp);
+                        p.HasSet = true;
+                        p.HasGet = true;
+                        p.GetStatements.Add(new CodeMethodReturnStatement(fr));
+                        p.SetStatements.Add(new CodeAssignStatement(fr, ceValue));
+
+                    } else
+                        ctd.Members.Add(new CodeSnippetTypeMember("\t\tpublic " + propType + " " + makePropName(tmp) + " { get; set; }\r\n"));
+                    //}
+                }
 #else
                 ctd.Members.Add(p = new CodeMemberProperty());
                 p.Name = propName;
@@ -331,7 +375,10 @@ namespace NSCs_codegen {
             firstField.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "fields"));
             f.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, "fields"));
 #endif
-            csc2.Add(new CodeSnippetStatement("\t\t}"));
+            if (cdp is Microsoft.VisualBasic.VBCodeProvider) {
+                csc2.Add(new CodeSnippetStatement("end select"));
+            } else
+                csc2.Add(new CodeSnippetStatement("\t\t}"));
 
             //return tmp;
             return csc2;
@@ -523,14 +570,206 @@ namespace NSCs_codegen {
         const string MNAME_SET_MOD = "setModifyFlag";
         const string MNAME_RESET_MOD = "resetModifyFlags";
 
-        static CodeMemberMethod addColtStuff() {
-            CodeMemberMethod m=new CodeMemberMethod();
+        static CodeTypeMemberCollection addColtStuff(CodeGenArgs args, CodeTypeDeclaration ctd, CodeNamespace ns,CodeDomProvider cdp) {
+            CodeTypeMemberCollection ret = new CodeTypeMemberCollection();
+            CodeArgumentReferenceExpression care = new CodeArgumentReferenceExpression("i");
 
-            //ctd.Members.Add(m = new CodeMemberMethod());
-            m.Attributes = MemberAttributes.Family | MemberAttributes.Override;
-            m.Name = "isModified";
+            ret.AddRange(new CodeTypeMember[] {
+                implementIsModified(MNAME_IS_MODIFIED),
+                implementModifiedProp(PNAME_MODIFIED,ns),
+                implementSetupQuery(args, ctd, ns,cdp),
+                
+                impThisTableName(),
+                impNumFields(),
+
+                impFieldAt(care),
+                impModAt(care)
+            });
+
+            return ret;
+        }
+
+          static CodeTypeMember impModAt(CodeArgumentReferenceExpression care) {
+            //    protected override bool isModifiedAt(int fieldNo) {
+            //    throw new NotImplementedException();
+            //}
+            CodeMemberMethod ret = new CodeMemberMethod();
+
+            ret.Name = "isModifiedAt";
+            ret.ReturnType = new CodeTypeReference(typeof(bool));
+            ret.Attributes = MemberAttributes.Family | MemberAttributes.Override;
+            ret.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), care.ParameterName));
+            ret.Statements.Add(new CodeMethodReturnStatement(
+                new CodeArrayIndexerExpression(
+                    new CodeFieldReferenceExpression(ceThis, FR_MOD_VECTOR_NAME), care)));
+            return ret;
+        }
+
+        static CodeTypeMember impFieldAt(CodeArgumentReferenceExpression care) {
+            /*
+                protected override ColumnDef fieldAt(int fieldNo) {
+                    throw new NotImplementedException();
+                }
+            * */
+            CodeMemberMethod ret = new CodeMemberMethod();
+
+            ret.Name = "fieldAt";
+            ret.ReturnType = new CodeTypeReference("ColumnDef");
+            ret.Attributes = MemberAttributes.Family | MemberAttributes.Override;
+            ret.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), care.ParameterName));
+            ret.Statements.Add(new CodeMethodReturnStatement(
+                new CodeArrayIndexerExpression(
+                    //new codeprop
+                    new CodeFieldReferenceExpression(null, FNAME_FIELDS), care)));
+            return ret;
+        }
+
+        static CodeTypeMember impNumFields() {
+            CodeMemberMethod ret = new CodeMemberMethod(); ;
+            //        public override int numberOfFields() {
+            //    throw new NotImplementedException();
+            //}
+            ret.Attributes = MemberAttributes.Override | MemberAttributes.Public;
+            ret.Name = "numberOfFields";
+            ret.ReturnType = new CodeTypeReference(typeof(int));
+            ret.Statements.Add(
+                new CodeMethodReturnStatement(
+                    new CodePropertyReferenceExpression(
+                        new CodeFieldReferenceExpression(null, FNAME_FIELDS), "Count")));
+            return ret;
+        }
+
+        static CodeTypeMember impThisTableName() {
+            CodeMemberMethod ret = new CodeMemberMethod(); ;
+
+            //  public override string thisTableName() {
+            //      throw new NotImplementedException();
+            //  }
+            ret.Attributes = MemberAttributes.Override | MemberAttributes.Public;
+            ret.Name = "thisTableName";
+            ret.ReturnType = new CodeTypeReference(typeof(string));
+            ret.Statements.Add(
+                new CodeMethodReturnStatement(
+                    new CodeFieldReferenceExpression(null, "TABLE_NAME")));
+            return ret;
+        }
+
+        static CodeTypeMember implementSetupQuery(CodeGenArgs args, CodeTypeDeclaration ctd, CodeNamespace ns,CodeDomProvider cdp) {
+            CodeMemberMethod ret = new CodeMemberMethod();
+            CodeArgumentReferenceExpression arCmd;
+            StringBuilder sb;
+
+            arCmd = new CodeArgumentReferenceExpression("cmd");
+            ret.Name = "setupQuery";
+            ret.Attributes = MemberAttributes.Family | MemberAttributes.Override;
+            ret.Parameters.Add(
+                new CodeParameterDeclarationExpression(
+                    new CodeTypeReference("SqlCommand"),
+                    arCmd.ParameterName));
+
+            addImport(ns, "System.Data.SqlClient");
+            using (StringWriter sw = new StringWriter(sb = new StringBuilder())) {
+                args.provider.GenerateCodeFromMember(ret, sw, args.opts);
+            }
+
+            return new CodeSnippetTypeMember(
+                makeComment(ctd.Name+"."+ret.Name ,sb.ToString(),cdp));
+            //new CodeCommentStatement(
+            //    sb.ToString()).Comment.Text);
+        }
+
+        static string makeComment(string methodName, string v, CodeDomProvider cdp) {
+            string[] parts = v.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            //Trace.WriteLine("here");
+            StringBuilder sb = new StringBuilder(), sbComment;
+            bool isVB = false;
+
+            if (cdp is Microsoft.VisualBasic.VBCodeProvider)
+                isVB = true;
+
+            if (!isVB)
+                sb.AppendLine("#warning implement or remove " + methodName + " as needed.");
+            else
+                sb.AppendLine();
+            sbComment = new StringBuilder();
+            foreach (string apart in parts)
+                sbComment.AppendLine(apart);
+            //sb.AppendLine("\t\t// " + apart);
+            var avar = new CodeCommentStatement(sbComment.ToString());
+            using (StringWriter sw = new StringWriter(sb)) {
+                cdp.GenerateCodeFromStatement(avar, sw, null);
+            }
+            return sb.ToString();
+        }
+
+        static void addImport(CodeNamespace ns, string anImport) {
+            if (ns == null)
+                throw new ArgumentNullException("CodeNamespace is null!", "ns");
+            if (string.IsNullOrEmpty(anImport ))
+                throw new ArgumentNullException("import is null!", "anImport");
+            foreach(CodeNamespaceImport cni in ns.Imports) 
+                if (string.Compare(cni.Namespace, anImport) == 0)
+                    return;
+            ns.Imports.Add(new CodeNamespaceImport(anImport));
+        }
+
+        const string MNAME_IS_MODIFIED = "isModified";
+        const string PNAME_MODIFIED = "modified";
+        static CodeTypeMember implementModifiedProp(string v, CodeNamespace ns) {
+            CodeMemberProperty p = new CodeMemberProperty();
+
+            /*
+             * [Browsable(false)]
+                public override bool modified { get { return isModified(); } }
+             * */
+            p.Name = v;
+            p.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+            p.Type = new CodeTypeReference(typeof(bool));
+            p.HasGet = true;
+            p.GetStatements.Add(
+                new CodeMethodReturnStatement(
+                    new CodeMethodInvokeExpression(null, MNAME_IS_MODIFIED)));
+            p.CustomAttributes.Add(
+                new CodeAttributeDeclaration(
+                    new CodeTypeReference("Browsable"), new CodeAttributeArgument(ceFalse)));
+            addImport(ns, "System.ComponentModel");
+            return p;
+        }
+
+        static CodeTypeMember implementIsModified(string methodName) {
+            CodeMemberMethod m = new CodeMemberMethod();
+            //CodeIterationStatement cis;
+            CodeVariableReferenceExpression vri = new CodeVariableReferenceExpression("i");
+            CodeFieldReferenceExpression frMod = new CodeFieldReferenceExpression(null, FR_MOD_VECTOR_NAME);
+
+            m.Attributes = MemberAttributes.Public | MemberAttributes.Override;
+            m.Name = methodName;
             m.ReturnType = new CodeTypeReference(typeof(bool));
-            m.Statements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression(ceBase, m.Name)));
+
+            m.Statements.AddRange(
+                new CodeStatement[] {
+                    new CodeIterationStatement(
+                        new CodeVariableDeclarationStatement(typeof(int), vri.VariableName,
+                        new CodeMethodInvokeExpression(frMod, "GetLowerBound", ceZero)),
+
+                        new CodeBinaryOperatorExpression(vri, CodeBinaryOperatorType.LessThan,
+                        new CodeMethodInvokeExpression(frMod, "GetUpperBound", ceZero)),
+                        new CodeAssignStatement(vri,
+                            new CodeBinaryOperatorExpression(vri, CodeBinaryOperatorType.Add, ceOne)),
+                        new CodeConditionStatement(
+                            new CodeBinaryOperatorExpression(
+                                new CodeArrayIndexerExpression(frMod, vri),
+                                  CodeBinaryOperatorType.ValueEquality,
+                                  ceTrue),
+                            new CodeMethodReturnStatement(ceTrue))),
+                    new CodeMethodReturnStatement(ceFalse)
+                });
+            /*
+             *  for (int i = _modified.GetLowerBound(0); i < _modified.GetUpperBound(0); i++)
+                if (_modified[i])
+                    return true;
+            return false;
+             * */
             return m;
         }
 
@@ -558,10 +797,10 @@ namespace NSCs_codegen {
             return ftabname;
         }
 
-        static void generateCSVFrom(IDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd, CodeNamespace ns) {
+        static void generateCSVFrom(IDataReader reader, string tableName, string outDir, CodeTypeDeclaration ctd, CodeNamespace ns,CodeDomProvider cdp) {
             DataTable dt = reader.GetSchemaTable();
 
-            generateColumnCollection(ctd, ns, dt);
+            generateColumnCollection(ctd, ns, dt,cdp);
         }
 
         static void writeCSV(string tableName, string outDir, DataTable dt) {
@@ -592,7 +831,8 @@ namespace NSCs_codegen {
             Debug.Print("generated: " + filename);
         }
 
-        static void generateColumnCollection(CodeTypeDeclaration ctd, CodeNamespace ns, DataTable dt) {
+        const string FNAME_FIELDS = "_fields";
+        static void generateColumnCollection(CodeTypeDeclaration ctd, CodeNamespace ns, DataTable dt,CodeDomProvider cdp) {
             CodeTypeReference ctrColDef = new CodeTypeReference("ColumnDef");
             CodeExpression[] args = makeClassFieldCollection(dt, ctrColDef);
             CodeMemberField f, f3;
@@ -602,12 +842,14 @@ namespace NSCs_codegen {
 
             ctd.Members.Add(f = new CodeMemberField());
             f.Attributes = MemberAttributes.Static;
-            f.Name = "_fields";
+            f.Name = FNAME_FIELDS;
             f.Type = new CodeTypeReference("List", ctrColDef);
             f.InitExpression = new CodeObjectCreateExpression(f.Type, new CodeArrayCreateExpression(ctrColDef, args));
 
             f3 = new CodeMemberField(new CodeTypeReference(new CodeTypeReference(typeof(bool)), 1), FR_MOD_VECTOR_NAME);
             f3.Attributes = 0;
+            if (cdp is Microsoft.VisualBasic.VBCodeProvider)
+                f3.Attributes = MemberAttributes.Private;
             f3.InitExpression = new CodeArrayCreateExpression(f3.Type, new CodePrimitiveExpression(args.Length));
             ctd.Members.Add(f3);
             addRegion("fields", f, f3);
@@ -727,9 +969,10 @@ namespace NSCs_codegen {
                 new CodeBinaryOperatorExpression(
                     new CodeMethodInvokeExpression(ar, "IsDBNull", vrI), CodeBinaryOperatorType.IdentityInequality, ceTrue),
                         new CodeCommentStatement("do real assign here"),
-                        cs),
-                csBreak
+                        cs)
             });
+            if (!(cdp is Microsoft.VisualBasic.VBCodeProvider))
+                csc.Add(csBreak);
         }
 
         static CodeExpression makeNullAssignment(Type colType, CodeDomProvider cdp) {
@@ -737,14 +980,17 @@ namespace NSCs_codegen {
 
             if (string.Compare(outType, "string", true) == 0) return new CodeSnippetExpression(outType + ".Empty");
             else if (string.Compare(outType, "int", true) == 0) return new CodeSnippetExpression("int.MinValue");
+            else if (string.Compare(outType, "integer", true) == 0) return new CodeSnippetExpression("Integer.MinValue");
             else if (string.Compare(outType, "char", true) == 0) return new CodeSnippetExpression("char.MinValue");
             else if (string.Compare(outType, "long", true) == 0) return new CodeSnippetExpression("long.MinValue");
             else if (string.Compare(outType, "bool", true) == 0) return new CodeSnippetExpression("false");
+            else if (string.Compare(outType, "boolean", true) == 0) return new CodeSnippetExpression("false");
             else if (string.Compare(outType, "decimal", true) == 0) return new CodeSnippetExpression("Decimal.MinValue");
             else if (string.Compare(outType, "double", true) == 0) return new CodeSnippetExpression("Double.MinValue");
             else if (string.Compare(outType, "System.Guid", true) == 0) return new CodeSnippetExpression("Guid.Empty");
             else if (string.Compare(outType, "System.DateTime", true) == 0) return new CodeSnippetExpression("DateTime.MinValue");
-            throw new InvalidOperationException("Unhandled type: " + colType.FullName);
+            else if (string.Compare(outType, "Date", true) == 0) return new CodeSnippetExpression("DateTime.MinValue");
+            throw new InvalidOperationException("Unhandled type: '" + outType + "' [" + colType.FullName + "]");
         }
 
         static string findTypeMethod(Type colType, CodeDomProvider cdp) {
@@ -753,13 +999,16 @@ namespace NSCs_codegen {
             if (string.Compare(outType, "string", true) == 0) return "GetString";
             else if (string.Compare(outType, "char", true) == 0) return "GetChar";
             else if (string.Compare(outType, "int", true) == 0) return "GetInt32";
+            else if (string.Compare(outType, "Integer", true) == 0) return "GetInt32";
             else if (string.Compare(outType, "long", true) == 0) return "GetInt64";
             else if (string.Compare(outType, "bool", true) == 0) return "GetBoolean";
+            else if (string.Compare(outType, "boolean", true) == 0) return "GetBoolean";
             else if (string.Compare(outType, "decimal", true) == 0) return "GetDecimal";
             else if (string.Compare(outType, "double", true) == 0) return "GetDouble";
             else if (string.Compare(outType, "System.Guid", true) == 0) return "GetGuid";
             else if (string.Compare(outType, "System.DateTime", true) == 0) return "GetDateTime";
-            throw new InvalidOperationException("Unhandled type: " + colType.FullName);
+            else if (string.Compare(outType, "Date", true) == 0) return "GetDateTime";
+            throw new InvalidOperationException("Unhandled type: '" +outType+"' ["+ colType.FullName+"]");
         }
 
         static string generate(CodeStatement cs, CodeDomProvider cdp, CodeGeneratorOptions opts) {
