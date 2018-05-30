@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 [assembly:AssemblyProduct("cs_codegen")]
 [assembly:AssemblyDescription("description of cs_codegen.")]
 [assembly:AssemblyCompany("Rik Cousens")]
-[assembly:AssemblyCopyright("Copyright © 2016, Rik Cousens")]
+[assembly:AssemblyCopyright("Copyright © 2016-2018, Rik Cousens")]
 #if DEBUG
 [assembly:AssemblyConfiguration("Debug assemblyVersion")]
 #else
@@ -13,7 +13,5 @@ using System.Runtime.InteropServices;
 #endif
 [assembly:ComVisible(false)]
 
-[assembly:AssemblyVersion("1.0.0.0")]
-[assembly:AssemblyFileVersion("1.0.0.0")]
-[assembly:AssemblyInformationalVersion("1.0.0.0")]
+[assembly:AssemblyVersion("1.0.1.0")]
 
