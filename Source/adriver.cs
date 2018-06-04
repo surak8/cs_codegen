@@ -38,15 +38,6 @@ namespace NSCs_codegen {
             int exitCode = 0;
 
             args2.setProvider("System.Data.SqlClient");
-            //if (args2.providerFactory is System.Data.SqlClient.SqlClientFactory) {
-            //    System.Data.SqlClient.SqlConnectionStringBuilder scsb;
-
-            //    scsb = new System.Data.SqlClient.SqlConnectionStringBuilder();
-            //    //Trace.WriteLine("here");
-            //}
-            //if (args2.provider is )
-            //args2.setProvider("NSMyProvider");
-
             appName = Assembly.GetEntryAssembly().GetName().Name;
 #if TRACE
             logFile = Environment.ExpandEnvironmentVariables("%TEMP%" + "\\" + appName + "\\" + appName + ".log");
@@ -221,15 +212,19 @@ namespace NSCs_codegen {
         }
 
         static void generateCodeFromTables(DbConnection conn, CodeGenArgs args) {
+            string currentTable=null;
+
             if (args.tables.Count > 0) {
                 try {
                     if (conn.State != ConnectionState.Open)
                         conn.Open();
                     foreach (string tableName in args.tables)
-                        generateCodeForSingleTable(conn, tableName, args);
+                        generateCodeForSingleTable(conn, currentTable=tableName, args);
 
                     conn.Close();
                 } catch (Exception ex) {
+                    if (!string.IsNullOrEmpty(currentTable))
+                        throw new ApplicationException("Error processing table: " + currentTable, ex);
                     Logger.log(MethodBase.GetCurrentMethod(), ex);
 
                     //throw new ApplicationException("error", ex);

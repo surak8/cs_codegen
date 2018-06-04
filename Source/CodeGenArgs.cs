@@ -20,8 +20,9 @@ namespace NSCs_codegen {
             database = null;
 
             opts = new CodeGeneratorOptions();
-            //opts.BlankLinesBetweenMembers = false;
-            //opts.ElseOnClosing = true;
+            opts.BlankLinesBetweenMembers = false;
+            opts.ElseOnClosing = true;
+            opts.VerbatimOrder = true;
 
             tables = new List<string>();
         }

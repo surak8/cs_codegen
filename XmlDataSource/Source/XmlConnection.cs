@@ -36,65 +36,37 @@ namespace NSXmlDatasource {
         #region DbConnection implementation
         #region properties
         public override string ConnectionString {
-            get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                return _connStr;
-            }
-            set {
-                //    Logger.log(MethodBase.GetCurrentMethod());
-                _connStr = value;
-                if (!string.IsNullOrEmpty(ConnectionString)) {
-                    //Debug.Print("here");
-                    string[] parts = ConnectionString.Split(';');
-                    int pos;
-                    string aKey, aValue;
-                    //Debug.Print("here");
+            get { Logger.log(MethodBase.GetCurrentMethod()); return _connStr; }
+            set { _connStr = value; if (!string.IsNullOrEmpty(ConnectionString)) extractParts(); }
+        }
 
-                    if (parts!=null)
-                        foreach(string aPart in parts) {
-                            pos = aPart.IndexOf('=');
-                            aKey = aPart.Substring(0, pos);
-                            aValue = aPart.Substring(pos + 1);
-                            //                 Debug.Print("here");
-                            if (string.Compare(aKey, "database", true) == 0) {
-                                this._db = aValue;
-                            } else if (string.Compare (aKey, "server", true) == 0) {
-                                this._datasrc = aValue;
-                            }else {
-                                Trace.WriteLine("unhandled key:" + aKey);
-                            }
-                        }
+        void extractParts() {
+            string[] parts = ConnectionString.Split(';');
+            string aKey, aValue;
+            int pos;
+
+            if (parts != null)
+                foreach (string aPart in parts) {
+                    pos = aPart.IndexOf('=');
+                    aKey = aPart.Substring(0, pos);
+                    aValue = aPart.Substring(pos + 1);
+                    if (string.Compare(aKey, "database", true) == 0) {
+                        this._db = aValue;
+                    } else if (string.Compare(aKey, "server", true) == 0) {
+                        this._datasrc = aValue;
+                    } else {
+                        Trace.WriteLine("unhandled key:" + aKey);
+                    }
                 }
-            }
         }
 
-        public override string Database {
-            get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                return _db;
-            }
-        }
+        public override string Database { get { Logger.log(MethodBase.GetCurrentMethod()); return _db; } }
 
-        public override string DataSource {
-            get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                return _datasrc;
-            }
-        }
+        public override string DataSource { get { Logger.log(MethodBase.GetCurrentMethod()); return _datasrc; } }
 
-        public override string ServerVersion {
-            get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                return _svrVersion;
-            }
-        }
+        public override string ServerVersion { get { Logger.log(MethodBase.GetCurrentMethod()); return _svrVersion; } }
 
-        public override ConnectionState State {
-            get {
-                //         Logger.log(MethodBase.GetCurrentMethod());
-                return _state;
-            }
-        }
+        public override ConnectionState State { get { return _state; } }
         #endregion properties
 
         public override void Open() {
