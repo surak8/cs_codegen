@@ -42,6 +42,7 @@ namespace NSCs_codegen {
         public CodeDomProvider provider { get; set; }
         public CodeGeneratorOptions opts { get; set; }
         internal DbProviderFactory providerFactory { get; private set; }
+        public bool testmode { get; private set; }
         #endregion
 
         #region methods
@@ -56,7 +57,7 @@ namespace NSCs_codegen {
                 if ((len = anArg.Length) >= 2) {
                     if (anArg[0] == '-' || anArg[0] == '/') {
                         switch (anArg[1]) {
-                            case 'B':ret.provider = new Microsoft.VisualBasic.VBCodeProvider();break;
+                            case 'B': ret.provider = new Microsoft.VisualBasic.VBCodeProvider(); break;
                             case 'd':
                                 if (len > 2)
                                     ret.database = anArg.Substring(2).Trim();
@@ -93,6 +94,7 @@ namespace NSCs_codegen {
                                     ret.tables.Add(anArg.Substring(2).Trim());
                                 else { ret.tables.Add(args[i + 1].Trim()); i++; }
                                 break;
+                            case 'T': ret.testmode = true; break;
                             case 'h': ret.showHelp = true; break;
                             case '?': ret.showHelp = true; break;
                             default: Console.Error.WriteLine("Unhandled arg: " + anArg); ret.showHelp = true; break;
@@ -113,10 +115,11 @@ namespace NSCs_codegen {
             Assembly a;
 
             a = Assembly.GetEntryAssembly();
-            tw.WriteLine(Environment.NewLine+"usage: " + a.GetName().Name +" "+
+            tw.WriteLine(Environment.NewLine + "usage: " + a.GetName().Name + " " +
                 "[-B] " +
                 "[-f] " +
                 "[-h] " +
+                "[-T] " +
                 "[-?] " +
                 "[-d database] " +
                 "[-n namespace] " +
