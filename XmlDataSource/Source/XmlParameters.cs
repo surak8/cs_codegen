@@ -13,7 +13,7 @@ namespace NSXmlDatasource {
         bool _readonly = false;
         #region ctor
         public XmlParameters() {
-            Logger.log(MethodBase.GetCurrentMethod());
+            //Logger.log(MethodBase.GetCurrentMethod());
         }
         #endregion
 

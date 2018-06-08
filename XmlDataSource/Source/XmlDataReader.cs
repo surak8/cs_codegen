@@ -10,7 +10,7 @@ namespace NSXmlDatasource {
         CommandBehavior behavior;
 
         public XmlDataReader() {
-            Logger.log(MethodBase.GetCurrentMethod());
+            //Logger.log(MethodBase.GetCurrentMethod());
         }
 
         public XmlDataReader(CommandBehavior behavior) : this() {
@@ -39,10 +39,12 @@ namespace NSXmlDatasource {
             }
         }
 
+        int _nFields = 0;
         public override int FieldCount {
             get {
                 Logger.log(MethodBase.GetCurrentMethod());
-                throw new NotImplementedException();
+                //throw new NotImplementedException();
+                return _nFields;
             }
         }
 
@@ -52,11 +54,12 @@ namespace NSXmlDatasource {
                 throw new NotImplementedException();
             }
         }
-
+        bool _closed = true;
         public override bool IsClosed {
             get {
                 Logger.log(MethodBase.GetCurrentMethod());
-                throw new NotImplementedException();
+                //throw new NotImplementedException();
+                return _closed;
             }
         }
 
@@ -162,8 +165,10 @@ namespace NSXmlDatasource {
         }
 
         public override DataTable GetSchemaTable() {
+            DataTable ret = new DataTable();
             Logger.log(MethodBase.GetCurrentMethod());
-            throw new NotImplementedException();
+            ret.Columns.Add("ColumnOrdinal", typeof(int));
+            return ret;
         }
 
         public override string GetString(int ordinal) {

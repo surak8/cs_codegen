@@ -25,7 +25,7 @@ namespace NSXmlDatasource {
 
         #region ctor
         public XmlConnection() {
-            Logger.log(MethodBase.GetCurrentMethod());
+            //Logger.log(MethodBase.GetCurrentMethod());
             _state = ConnectionState.Closed;
             _svrVersion = "V1.0";
         }
@@ -94,7 +94,8 @@ namespace NSXmlDatasource {
         }
 
         protected override DbCommand CreateDbCommand() {
-            return new XmlCommand();
+            //return new XmlCommand();
+            return this.DbProviderFactory.CreateCommand();
         }
 
         #endregion DbConnection implementation
@@ -121,8 +122,9 @@ namespace NSXmlDatasource {
 
         protected override DbProviderFactory DbProviderFactory {
             get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                return base.DbProviderFactory;
+                //Logger.log(MethodBase.GetCurrentMethod());
+                //return base.DbProviderFactory;
+                return DbProviderFactories.GetFactory("NSMyProvider");
             }
         }
 

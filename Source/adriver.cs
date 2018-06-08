@@ -40,7 +40,7 @@ namespace NSCs_codegen {
             string logFile, dir, appName, errMsg;
             int exitCode = 0;
 
-            args2.setProvider("System.Data.SqlClient");
+            //args2.setProvider("System.Data.SqlClient");
             appName = Assembly.GetEntryAssembly().GetName().Name;
 #if TRACE
             logFile = Environment.ExpandEnvironmentVariables("%TEMP%" + "\\" + appName + "\\" + appName + ".log");
@@ -107,22 +107,22 @@ namespace NSCs_codegen {
             }
         }
 
-        static void engageTestMode(CodeGenArgs args2,string invariantName) {
+        static void engageTestMode(CodeGenArgs args2, string invariantName) {
             DbProviderFactory factory;
             DataTable dt;
             //string invariantName;
 
             FactoryTester ft;
             try {
-                if (!string.IsNullOrEmpty (invariantName )) {
+                if (!string.IsNullOrEmpty(invariantName)) {
                     //testFactory(DbProviderFactories.GetFactory(invariantName));
                     ft = new FactoryTester(DbProviderFactories.GetFactory(invariantName));
                     ft.doTests();
                 } else {
                     dt = DbProviderFactories.GetFactoryClasses();
-                    for (int nrow = 0 ; nrow < dt.Rows.Count ; nrow++) {
+                    for (int nrow = 0; nrow < dt.Rows.Count; nrow++) {
                         invariantName = dt.Rows[nrow]["InvariantName"].ToString();
-                        engageTestMode(null,invariantName);
+                        engageTestMode(null, invariantName);
                         //factory = DbProviderFactories.GetFactory(invariantName);
                         //testFactory(factory);
                     }
@@ -145,14 +145,14 @@ namespace NSCs_codegen {
             foreach (DataRow row in table.Rows) {
                 foreach (DataColumn column in table.Columns) {
                     var avar = row[column];
-                    Logger.logMsg (column.ColumnName+" = "+row[column].ToString ());
+                    Logger.logMsg(column.ColumnName + " = " + row[column].ToString());
                 }
             }
             return table;
         }
 
         static void testFactory(DbProviderFactory factory) {
-StringBuilder sb;
+            StringBuilder sb;
             int i = 0;
 
             sb = new System.Text.StringBuilder();
@@ -175,7 +175,7 @@ StringBuilder sb;
                 } else
                     Trace.WriteLine("no keys");
 
-                if (factory.GetType ().Equals(typeof(System.Data.SqlClient.SqlClientFactory))) {
+                if (factory.GetType().Equals(typeof(System.Data.SqlClient.SqlClientFactory))) {
                     dbcsb.Clear();
                     dbcsb.Add("User ID", "operator");
                     dbcsb.Add("Password", "operator");
@@ -224,7 +224,7 @@ StringBuilder sb;
             if (factory.GetType().Equals(typeof(SqlClientFactory)))
                 x3.ChangeDatabase("checkweigh_data_dev");
             else
-            x3.ChangeDatabase("test");
+                x3.ChangeDatabase("test");
             var x31 = x3.CreateCommand();
             x3.Close();
 
@@ -232,7 +232,7 @@ StringBuilder sb;
             x3 = null;
         }
 
-          static void X3_StateChange(object sender, StateChangeEventArgs e) {
+        static void X3_StateChange(object sender, StateChangeEventArgs e) {
             Logger.log(MethodBase.GetCurrentMethod(), "Old=" + e.OriginalState + ", New=" + e.CurrentState);
         }
 

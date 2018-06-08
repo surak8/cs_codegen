@@ -7,9 +7,10 @@ using NSMisc;
 namespace NSXmlDatasource {
     public class XmlDataSourceEnumerator : DbDataSourceEnumerator {
         public override DataTable GetDataSources() {
+            DataTable ret = new DataTable();
+
             Logger.log(MethodBase.GetCurrentMethod());
-            throw new NotImplementedException();
+            return ret;
         }
     }
-
 }

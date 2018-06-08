@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlDatasource", "XmlDataSou
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "misc", "misc\misc.csproj", "{6E33E7DB-EDA9-4333-A2A0-2C38D76D5AF3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "driver", "driver\driver.csproj", "{B651F194-A1CE-482C-908A-8326CB02EB8A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySql", "MySql\MySql.csproj", "{58327361-240A-4DCD-AE69-67627BAB0E9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -30,6 +34,14 @@ Global
 		{6E33E7DB-EDA9-4333-A2A0-2C38D76D5AF3}.Debug|x86.Build.0 = Debug|x86
 		{6E33E7DB-EDA9-4333-A2A0-2C38D76D5AF3}.Release|x86.ActiveCfg = Release|x86
 		{6E33E7DB-EDA9-4333-A2A0-2C38D76D5AF3}.Release|x86.Build.0 = Release|x86
+		{B651F194-A1CE-482C-908A-8326CB02EB8A}.Debug|x86.ActiveCfg = Debug|x86
+		{B651F194-A1CE-482C-908A-8326CB02EB8A}.Debug|x86.Build.0 = Debug|x86
+		{B651F194-A1CE-482C-908A-8326CB02EB8A}.Release|x86.ActiveCfg = Release|x86
+		{B651F194-A1CE-482C-908A-8326CB02EB8A}.Release|x86.Build.0 = Release|x86
+		{58327361-240A-4DCD-AE69-67627BAB0E9F}.Debug|x86.ActiveCfg = Debug|x86
+		{58327361-240A-4DCD-AE69-67627BAB0E9F}.Debug|x86.Build.0 = Debug|x86
+		{58327361-240A-4DCD-AE69-67627BAB0E9F}.Release|x86.ActiveCfg = Release|x86
+		{58327361-240A-4DCD-AE69-67627BAB0E9F}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

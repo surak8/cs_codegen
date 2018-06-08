@@ -7,23 +7,29 @@ using System.Security;
 using System.Security.Permissions;
 using NSMisc;
 
+
+// http://msdn.microsoft.com/en-us/library/ms379620(VS.80).aspx
+// http://www.c-sharpcorner.com/UploadFile/amit_agrl/ProviderFactory08052005030042AM/ProviderFactory.aspx
+
+
 namespace NSXmlDatasource {
     public partial class XmlProviderFactory : DbProviderFactory {
         #region fields
         public static XmlProviderFactory Instance = new XmlProviderFactory();
         #endregion
 
+        bool _canCreateDSEnum = false;
         #region ctor
         public XmlProviderFactory() {
-            Logger.log(MethodBase.GetCurrentMethod());
+            //Logger.log(MethodBase.GetCurrentMethod());
         }
         #endregion
 
         #region DbProviderFactory implementation
         public override bool CanCreateDataSourceEnumerator {
             get {
-                Logger.log(MethodBase.GetCurrentMethod());
-                return true;
+                //Logger.log(MethodBase.GetCurrentMethod());
+                return _canCreateDSEnum;
             }
         }
 
@@ -38,7 +44,7 @@ namespace NSXmlDatasource {
         }
 
         public override DbConnection CreateConnection() {
-            Logger.log(MethodBase.GetCurrentMethod());
+            //Logger.log(MethodBase.GetCurrentMethod());
             return new XmlConnection();
         }
 

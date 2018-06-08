@@ -16,7 +16,7 @@ namespace NSXmlDatasource {
         int _timeout;
 
         public XmlCommand() {
-            Logger.log(MethodBase.GetCurrentMethod());
+            //Logger.log(MethodBase.GetCurrentMethod());
             _designVis = true;
             _timeout = 6000;
             _parms = new XmlParameters();
@@ -79,7 +79,7 @@ namespace NSXmlDatasource {
 
         protected override DbConnection DbConnection {
             get {
-                Logger.log(MethodBase.GetCurrentMethod());
+                //Logger.log(MethodBase.GetCurrentMethod());
                 return _connection;
             }
             set {
@@ -113,7 +113,8 @@ namespace NSXmlDatasource {
 
         public override int ExecuteNonQuery() {
             Logger.log(MethodBase.GetCurrentMethod());
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            return -1;
         }
 
         public override object ExecuteScalar() {
@@ -123,12 +124,12 @@ namespace NSXmlDatasource {
 
         public override void Prepare() {
             Logger.log(MethodBase.GetCurrentMethod());
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         protected override DbParameter CreateDbParameter() {
             Logger.log(MethodBase.GetCurrentMethod());
-            throw new NotImplementedException();
+            return new XmlParameter();
         }
 
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior) {

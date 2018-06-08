@@ -25,10 +25,10 @@ namespace NSXmlDatasource {
             Logger.log(MethodBase.GetCurrentMethod());
             throw new NotImplementedException();
         }
-
+        DbDataAdapter _adapter;
         protected override void SetRowUpdatingHandler(DbDataAdapter adapter) {
             Logger.log(MethodBase.GetCurrentMethod());
-            throw new NotImplementedException();
+            _adapter = adapter;
         }
     }
 

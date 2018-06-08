@@ -5,12 +5,12 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{B0ECFABB-7ADA-467D-954F-64F11EA7F19D}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{B651F194-A1CE-482C-908A-8326CB02EB8A}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NSXmlDatasource</RootNamespace>
-    <AssemblyName>XmlDatasource</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <RootNamespace>NSDriver</RootNamespace>
+    <AssemblyName>driver</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -19,11 +19,11 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\debug\</OutputPath>
+    <OutputPath>..\bin\debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\debug\XmlDatasource.XML</DocumentationFile>
+    <DocumentationFile>..\bin\debug\driver.XML</DocumentationFile>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <NoWarn>1591</NoWarn>
     <Prefer32Bit>false</Prefer32Bit>
@@ -32,11 +32,11 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>.\</OutputPath>
+    <OutputPath>.\bin\release</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>XmlDatasource.xml</DocumentationFile>
+    <DocumentationFile>.\bin\release\driver.xml</DocumentationFile>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <NoWarn>1591</NoWarn>
     <Prefer32Bit>false</Prefer32Bit>
@@ -46,37 +46,25 @@
   </PropertyGroup>
   <ItemGroup Label="None">
     <None Include="app.config" />
-    <Compile Include="Source\XmlCommand.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Source\XmlCommandBuilder.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Source\XmlConnectionStringBuilder.cs" />
   </ItemGroup>
   <ItemGroup Label="AssemblyInfo">
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Source\XmlConnection.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Source\XmlDataAdapter.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Source\XmlDataReader.cs" />
-    <Compile Include="Source\XmlDataSourceEnumerator.cs" />
-    <Compile Include="Source\XmlParameter.cs" />
-    <Compile Include="Source\XmlParameters.cs" />
-    <Compile Include="Source\XmlPermission.cs" />
-    <Compile Include="Source\XmlProviderFactory.cs" />
+  </ItemGroup>
+  <ItemGroup Label="IDK">
+    <Compile Include="Source\adriver.cs" />
   </ItemGroup>
   <ItemGroup Label="References">
     <Reference Include="System" />
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\misc\misc.csproj">
-      <Project>{6e33e7db-eda9-4333-a2a0-2c38d76d5af3}</Project>
-      <Name>misc</Name>
+    <ProjectReference Include="..\MySql\MySql.csproj">
+      <Project>{58327361-240a-4dcd-ae69-67627bab0e9f}</Project>
+      <Name>MySql</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\XmlDataSource\XmlDatasource.csproj">
+      <Project>{b0ecfabb-7ada-467d-954f-64f11ea7f19d}</Project>
+      <Name>XmlDatasource</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
