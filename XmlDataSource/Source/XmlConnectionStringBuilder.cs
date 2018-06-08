@@ -9,6 +9,10 @@ namespace NSXmlDatasource {
     public class XmlConnectionStringBuilder : DbConnectionStringBuilder {
         public XmlConnectionStringBuilder() {
             Logger.log(MethodBase.GetCurrentMethod());
+            base.Add("test", string.Empty);
+            //base.ClearPropertyDescriptors();
+            //base.Clear();
+            //base.Add("test", null);
         }
         #region overrides
         public override void Clear() {
@@ -96,5 +100,7 @@ namespace NSXmlDatasource {
         public override int GetHashCode() {
             return base.GetHashCode();
         }
+
+        //override 
     }
 }

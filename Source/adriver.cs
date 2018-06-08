@@ -22,9 +22,11 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.Common;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using NSMisc;
 
 namespace NSCs_codegen {
@@ -50,27 +52,30 @@ namespace NSCs_codegen {
 #endif
             Trace.WriteLine(appName + " starts");
 
-            if (string.IsNullOrEmpty(args2.database)) {
-                Console.Error.WriteLine("database not specified.  Cannot continue.");
-                args2.showHelp = true;
-            }
-            if (string.IsNullOrEmpty(args2.outDir)) {
-                Console.Error.WriteLine("output-directory not specified.  Cannot continue.");
-                args2.showHelp = true;
+            if (!args2.testmode) {
+                if (string.IsNullOrEmpty(args2.database)) {
+                    Console.Error.WriteLine("database not specified.  Cannot continue.");
+                    args2.showHelp = true;
+                }
+                if (string.IsNullOrEmpty(args2.outDir)) {
+                    Console.Error.WriteLine("output-directory not specified.  Cannot continue.");
+                    args2.showHelp = true;
+                }
             }
             if (args2.showHelp) {
                 args2.showHelpText(Console.Error);
                 exitCode = 2;
             } else {
-                Trace.WriteLine("Generate files in: " + args2.outDir);
                 try {
-                    if (!Directory.Exists(args2.outDir))
-                        Directory.CreateDirectory(args2.outDir);
 #if true
                     if (args2.testmode) {
-                        var factory = DbProviderFactories.GetFactory("System.Data.SqlClient");
-                        engageTestMode(args2);
+                        //var factory = DbProviderFactories.GetFactory("System.Data.SqlClient");
+                        engageTestMode(args2, "NSMyProvider");
+                        //engageTestMode(args2, "System.Data.SqlClient");
                     } else {
+                        Trace.WriteLine("Generate files in: " + args2.outDir);
+                        if (!Directory.Exists(args2.outDir))
+                            Directory.CreateDirectory(args2.outDir);
                         extractDataFor(args2);
                     }
 #else
@@ -102,29 +107,31 @@ namespace NSCs_codegen {
             }
         }
 
-        static void engageTestMode(CodeGenArgs args2) {
+        static void engageTestMode(CodeGenArgs args2,string invariantName) {
             DbProviderFactory factory;
-            //DbConnectionStringBuilder dbcsb;
-            const string PROVIDER_NAME = "NSMyProvider";
-            //DbCommand x1;
-            try {
-                factory = DbProviderFactories.GetFactory(PROVIDER_NAME);
-                showProviderFactoryClasses();
-                testFactory(factory);
-              
-                //x8=factory.CreatePermission ()
-                //x9=factory.1
+            DataTable dt;
+            //string invariantName;
 
-                //connection = factory.CreateConnection();
-                //connection.ConnectionString = connectionString;
+            FactoryTester ft;
+            try {
+                if (!string.IsNullOrEmpty (invariantName )) {
+                    //testFactory(DbProviderFactories.GetFactory(invariantName));
+                    ft = new FactoryTester(DbProviderFactories.GetFactory(invariantName));
+                    ft.doTests();
+                } else {
+                    dt = DbProviderFactories.GetFactoryClasses();
+                    for (int nrow = 0 ; nrow < dt.Rows.Count ; nrow++) {
+                        invariantName = dt.Rows[nrow]["InvariantName"].ToString();
+                        engageTestMode(null,invariantName);
+                        //factory = DbProviderFactories.GetFactory(invariantName);
+                        //testFactory(factory);
+                    }
+                }
             } catch (ConfigurationErrorsException cee) {
                 Logger.log(MethodBase.GetCurrentMethod(), cee);
+            } catch (ArgumentException ae) {
+                Logger.log(MethodBase.GetCurrentMethod(), ae);
             } catch (Exception ex) {
-                // Set the connection to null if it was created.
-                //if (connection != null) {
-                //    connection = null;
-                //}
-                //Console.WriteLine(ex.Message);
                 Logger.log(MethodBase.GetCurrentMethod(), ex);
             }
         }
@@ -137,22 +144,62 @@ namespace NSCs_codegen {
             // Display each row and column value.
             foreach (DataRow row in table.Rows) {
                 foreach (DataColumn column in table.Columns) {
-                    Console.WriteLine(row[column]);
+                    var avar = row[column];
+                    Logger.logMsg (column.ColumnName+" = "+row[column].ToString ());
                 }
             }
             return table;
         }
 
         static void testFactory(DbProviderFactory factory) {
+StringBuilder sb;
+            int i = 0;
+
+            sb = new System.Text.StringBuilder();
             try {
+                //factory.
                 var dbcsb = factory.CreateConnectionStringBuilder();
-            var x1 = factory.CreateCommand();
-            var x2 = factory.CreateCommandBuilder();
-            var x3 = factory.CreateConnection();
-            var x4 = factory.CreateConnectionStringBuilder();
-            var x5 = factory.CreateDataAdapter();
-            var x6 = factory.CreateDataSourceEnumerator();
-            var x7 = factory.CreateParameter();
+                sb.Append(factory.GetType().Name + ": Keys = ");
+                foreach (string akey in dbcsb.Keys) {
+                    if (i > 0)
+                        sb.Append(",");
+                    sb.Append(akey);
+                    //dbcsb.Add(akey, "my_" + akey);
+                    i++;
+                }
+                if (i > 0) {
+                    sb.AppendLine();
+                    Trace.WriteLine(sb.ToString());
+                    Trace.WriteLine("Sample connection-string: " + dbcsb.ConnectionString);
+                    //Logger.log(sb.ToString());
+                } else
+                    Trace.WriteLine("no keys");
+
+                if (factory.GetType ().Equals(typeof(System.Data.SqlClient.SqlClientFactory))) {
+                    dbcsb.Clear();
+                    dbcsb.Add("User ID", "operator");
+                    dbcsb.Add("Password", "operator");
+                    dbcsb.Add("Application Name", Assembly.GetEntryAssembly().GetName().Name);
+                    dbcsb.Add("Workstation ID", Environment.MachineName);
+                    dbcsb.Add("Data Source", "colt-sql");
+                    dbcsb.Add("Initial Catalog", "checkweigh_data_dev");
+
+                    dbcsb.Add("Persist Security Info", true);
+                    dbcsb.Add("Integrated Security", true);
+                    Trace.WriteLine("her");
+                }
+                testConnection(factory, dbcsb.ConnectionString);
+
+                var x1 = factory.CreateCommand();
+                //x1.
+                var x2 = factory.CreateCommandBuilder();
+                var x4 = factory.CreateConnectionStringBuilder();
+                var x5 = factory.CreateDataAdapter();
+                if (factory.CanCreateDataSourceEnumerator) {
+                    var x6 = factory.CreateDataSourceEnumerator();
+                    Trace.WriteLine("do-enumerator here");
+                }
+                var x7 = factory.CreateParameter();
             } catch (Exception ex) {
                 // Set the connection to null if it was created.
                 //if (connection != null) {
@@ -160,6 +207,37 @@ namespace NSCs_codegen {
                 //}
                 Console.WriteLine(ex.Message);
             }
+        }
+
+        static void testConnection(DbProviderFactory factory, string connStr) {
+            var x3 = factory.CreateConnection();
+            //x3.Close();
+            x3.ConnectionString = connStr;
+            Logger.logMsg("Connection: timeout=" + x3.ConnectionTimeout + ", Database=" + x3.Database + ", DataSource=" + x3.DataSource);
+            x3.Disposed += X3_Disposed;
+            //x3.BeginTransaction();
+            //x3.EnlistTransaction();
+            //x3.OpenAsync()
+            x3.StateChange += X3_StateChange;
+            x3.Open();
+            var x30 = x3.GetSchema();
+            if (factory.GetType().Equals(typeof(SqlClientFactory)))
+                x3.ChangeDatabase("checkweigh_data_dev");
+            else
+            x3.ChangeDatabase("test");
+            var x31 = x3.CreateCommand();
+            x3.Close();
+
+            x3.Dispose();
+            x3 = null;
+        }
+
+          static void X3_StateChange(object sender, StateChangeEventArgs e) {
+            Logger.log(MethodBase.GetCurrentMethod(), "Old=" + e.OriginalState + ", New=" + e.CurrentState);
+        }
+
+        static void X3_Disposed(object sender, EventArgs e) {
+            Logger.log(MethodBase.GetCurrentMethod());
         }
 
         //static void Conn_InfoMessage(Object sender, System.Data.SqlClient.SqlInfoMessageEventArgs e) {

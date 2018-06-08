@@ -50,6 +50,7 @@
   <ItemGroup Label="AssemblyInfo">
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Source\CodeGenArgs.cs" />
+    <Compile Include="Source\FactoryTester.cs" />
   </ItemGroup>
   <ItemGroup Label="IDK">
     <Compile Include="Source\adriver.cs" />

@@ -60,7 +60,21 @@ namespace NSMisc {
         }
 
         public static void log(MethodBase mb, Exception ex) {
-            logMsg(makeSig(mb) + ":" + ex.Message);
+            logMsg(makeSig(mb) + ":" + Environment.NewLine +
+                decomposeException(ex) + Environment.NewLine +
+                ex.StackTrace);
+        }
+
+          static string decomposeException(Exception ex) {
+            Exception ex0 = ex;
+            StringBuilder sb = new StringBuilder();
+
+
+            while (ex0!=null) {
+                sb.AppendLine("[" + ex0.GetType().FullName + "] " + ex0.Message);
+                ex0 = ex0.InnerException;
+            }
+            return sb.ToString();
         }
         #endregion logging-methods
 

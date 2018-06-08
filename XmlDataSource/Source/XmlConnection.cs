@@ -127,8 +127,10 @@ namespace NSXmlDatasource {
         }
 
         public override DataTable GetSchema() {
+            DataTable ret = new DataTable();
             Logger.log(MethodBase.GetCurrentMethod());
-            return base.GetSchema();
+
+            return ret;
         }
 
         public override DataTable GetSchema(string collectionName) {
